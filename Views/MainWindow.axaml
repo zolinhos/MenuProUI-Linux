@@ -11,30 +11,76 @@
 
   <Grid ColumnDefinitions="320,*" RowDefinitions="Auto,*" Margin="14" RowSpacing="12" ColumnSpacing="12">
 
-    <!-- Top bar -->
+    <!-- Top bar with dropdown menus -->
     <Border Grid.ColumnSpan="2" CornerRadius="10" Padding="12" BorderBrush="#333" BorderThickness="1">
-      <Grid ColumnDefinitions="*,*">
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Content="Novo Cliente" Click="OnNewClient"/>
-          <Button Content="Editar Cliente" Click="OnEditClient"/>
-          <Button Content="Excluir Cliente" Click="OnDeleteClient"/>
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="15">
+        
+        <!-- Menu Clientes -->
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Button Name="ClientsMenuBtn" Width="35" Height="35" Padding="0" ToolTip.Tip="Menu de Clientes">⋮</Button>
+          <TextBlock VerticalAlignment="Center" Text="Clientes" FontWeight="Bold"/>
         </StackPanel>
 
-        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-          <Button Content="Novo Acesso" Click="OnNewAccess"/>
-          <Button Content="Editar Acesso" Click="OnEditAccess"/>
-          <Button Content="Excluir Acesso" Click="OnDeleteAccess"/>
-          <Button Content="Abrir" Click="OnOpenAccess"/>
+        <!-- Menu Acessos -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+          <Button Name="AccessesMenuBtn" Width="35" Height="35" Padding="0" ToolTip.Tip="Menu de Acessos">⋮</Button>
+          <TextBlock VerticalAlignment="Center" Text="Acessos" FontWeight="Bold"/>
         </StackPanel>
+
+        <!-- Spacer -->
+        <Border Grid.Column="2"/>
+
+        <!-- Quick actions -->
+        <Button Grid.Column="3" Content="Abrir" Click="OnOpenAccess" ToolTip.Tip="Abrir acesso selecionado (Enter)"/>
+        <Button Grid.Column="4" Content="Recarregar" Click="OnReload" ToolTip.Tip="Recarregar dados"/>
       </Grid>
     </Border>
 
+    <!-- Context menus as popup -->
+    <Popup Name="ClientsMenu" IsOpen="False" PlacementTarget="{Binding #ClientsMenuBtn}">
+      <Border Background="#1e1e1e" BorderBrush="#333" BorderThickness="1" CornerRadius="6" Padding="0">
+        <StackPanel Spacing="0">
+          <Button Content="✚ Novo Cliente" Click="OnNewClient" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent"/>
+          <Border BorderBrush="#333" BorderThickness="0,1,0,0"/>
+          <Button Content="✎ Editar Cliente" Click="OnEditClient" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent"/>
+          <Border BorderBrush="#333" BorderThickness="0,1,0,0"/>
+          <Button Content="✕ Excluir Cliente" Click="OnDeleteClient" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent"/>
+        </StackPanel>
+      </Border>
+    </Popup>
+
+    <Popup Name="AccessesMenu" IsOpen="False" PlacementTarget="{Binding #AccessesMenuBtn}">
+      <Border Background="#1e1e1e" BorderBrush="#333" BorderThickness="1" CornerRadius="6" Padding="0">
+        <StackPanel Spacing="0">
+          <Button Content="✚ Novo Acesso" Click="OnNewAccess" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent"/>
+          <Border BorderBrush="#333" BorderThickness="0,1,0,0"/>
+          <Button Content="✎ Editar Acesso" Click="OnEditAccess" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent"/>
+          <Border BorderBrush="#333" BorderThickness="0,1,0,0"/>
+          <Button Content="✕ Excluir Acesso" Click="OnDeleteAccess" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent"/>
+        </StackPanel>
+      </Border>
+    </Popup>
+
     <!-- Clients -->
     <Border Grid.Row="1" Grid.Column="0" CornerRadius="10" Padding="12" BorderBrush="#333" BorderThickness="1">
-      <StackPanel Spacing="10">
-        <TextBlock Text="Clientes" FontSize="18"/>
-        <ListBox Name="ClientsList"
-                 ItemsSource="{Binding Clients}"
+      <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" RowSpacing="10">
+        
+        <!-- Header with counter -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+          <TextBlock Text="Clientes" FontSize="18"/>
+          <TextBlock Grid.Column="1" Text="{Binding ClientsFilteredCount, StringFormat={}{0} clientes}" Opacity="0.7" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Search box -->
+        <TextBox Grid.Row="1" 
+                 Name="ClientsSearchBox"
+                 Watermark="🔍 Buscar cliente..."
+                 Text="{Binding ClientsSearchText}"
+                 Padding="10,8" CornerRadius="6" BorderBrush="#333"/>
+
+        <!-- Clients list filtered -->
+        <ListBox Grid.Row="2" Name="ClientsList"
+                 ItemsSource="{Binding ClientsFiltered}"
                  SelectedItem="{Binding SelectedClient}"
                  SelectionChanged="OnClientSelectionChanged">
           <ListBox.ContextMenu>
@@ -46,22 +92,33 @@
           </ListBox.ContextMenu>
         </ListBox>
 
-        <Border BorderBrush="#333" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
+        <Border Grid.Row="3" BorderBrush="#333" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
 
-        <TextBlock Text="Arquivos" Opacity="0.8"/>
-        <TextBlock Text="{Binding ClientsPath}" Opacity="0.7" FontSize="12"/>
-        <TextBlock Text="{Binding AccessesPath}" Opacity="0.7" FontSize="12"/>
-      </StackPanel>
+        <TextBlock Grid.Row="4" Text="Arquivos" Opacity="0.8"/>
+        <TextBlock Grid.Row="5" Text="{Binding ClientsPath}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"/>
+        <TextBlock Grid.Row="6" Text="{Binding AccessesPath}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"/>
+      </Grid>
     </Border>
 
     <!-- Accesses -->
     <Border Grid.Row="1" Grid.Column="1" CornerRadius="10" Padding="12" BorderBrush="#333" BorderThickness="1">
-      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+      <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
 
-        <TextBlock Text="Acessos do Cliente Selecionado" FontSize="18"/>
+        <!-- Header with counter -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+          <TextBlock Text="Acessos" FontSize="18"/>
+          <TextBlock Grid.Column="1" Text="{Binding AccessesCountDisplay, StringFormat={}{0} acessos}" Opacity="0.7" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Search box for accesses -->
+        <TextBox Grid.Row="1"
+                 Name="AccessesSearchBox"
+                 Watermark="🔍 Buscar acesso..."
+                 Text="{Binding AccessesSearchText}"
+                 Padding="10,8" CornerRadius="6" BorderBrush="#333"/>
 
         <!-- Header columns -->
-        <Grid Grid.Row="1" ColumnDefinitions="90,*,200,70,140,160" Opacity="0.85">
+        <Grid Grid.Row="2" ColumnDefinitions="90,*,200,70,140,160" Opacity="0.85">
           <TextBlock Grid.Column="0" Text="Tipo" FontWeight="Bold"/>
           <TextBlock Grid.Column="1" Text="Apelido" FontWeight="Bold"/>
           <TextBlock Grid.Column="2" Text="Host" FontWeight="Bold"/>
@@ -70,9 +127,10 @@
           <TextBlock Grid.Column="5" Text="URL" FontWeight="Bold"/>
         </Grid>
 
-        <ListBox Grid.Row="2"
+        <!-- Accesses list filtered -->
+        <ListBox Grid.Row="3"
                  Name="AccessList"
-                 ItemsSource="{Binding Accesses}"
+                 ItemsSource="{Binding AccessesFiltered}"
                  SelectedItem="{Binding SelectedAccess}"
                  DoubleTapped="OnOpenAccess">
           <ListBox.ContextMenu>

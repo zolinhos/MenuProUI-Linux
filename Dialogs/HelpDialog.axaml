@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MenuProUI.Dialogs.HelpDialog"
+        Width="700" Height="650"
+        WindowStartupLocation="CenterOwner"
+        Title="Ajuda - Menu Pro UI"
+        CanResize="True"
+        MinWidth="500" MinHeight="400">
+  <Grid RowDefinitions="*,Auto" Margin="0">
+    <ScrollViewer>
+      <TextBlock Name="HelpContent" 
+                 Margin="20"
+                 TextWrapping="Wrap" 
+                 FontSize="14"
+                 FontFamily="Courier New"
+                 Foreground="#FFFFFF"/>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="20,0,20,20">
+      <Button Content="Fechar" Click="OnClose" Padding="20,8"/>
+    </StackPanel>
+  </Grid>
+</Window>

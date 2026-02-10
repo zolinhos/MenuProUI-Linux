@@ -1,0 +1,40 @@
+# Build results
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+*.so
+*.dylib
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Packages (DEB, etc)
+*.deb
+menupro-ui_*/
+
+# Local user files
+.config/
+.local/
+
+# Temporary files
+*.tmp
+*.bak
+*.temp

@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-set -e
-command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q || true
-command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -q /usr/share/icons/hicolor || true
-command -v kbuildsycoca5 >/dev/null 2>&1 && kbuildsycoca5 --noincremental >/dev/null 2>&1 || true
-exit 0

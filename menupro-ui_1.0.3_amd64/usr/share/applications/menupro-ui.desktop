@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=MenuProUI
-Comment=Gerenciador de acessos SSH/RDP/URLs (sem armazenar senhas)
-Exec=/usr/bin/menuproui
-Icon=menupro-ui
-Terminal=false
-Categories=Utility;Network;

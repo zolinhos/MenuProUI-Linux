@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MenuProUI.Dialogs.ClientDialog"
+        Width="560" Height="360"
+        WindowStartupLocation="CenterOwner"
+        Title="Cliente"
+        CanResize="False">
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="16" RowSpacing="10">
+
+    <TextBlock Text="Nome do Cliente" />
+    <TextBox Grid.Row="1" Name="NameBox"/>
+
+    <TextBlock Grid.Row="2" Text="Observações" />
+
+    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Height="160">
+      <TextBox Name="NotesBox"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"/>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,8,0,0">
+      <Button Content="Cancelar" Click="OnCancel"/>
+      <Button Content="Salvar" Click="OnSave"/>
+    </StackPanel>
+
+  </Grid>
+</Window>

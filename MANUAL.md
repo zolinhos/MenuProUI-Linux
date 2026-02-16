@@ -26,7 +26,7 @@ chmod +x build-deb.sh
 3. Instale o pacote gerado:
 
 ```bash
-sudo dpkg -i menupro-ui_1.0.3_amd64.deb
+sudo dpkg -i menupro-ui_1.7.3_amd64.deb
 sudo apt-get install -f   # para resolver dependências, se necessário
 ```
 
@@ -39,7 +39,7 @@ Instalação a partir do código-fonte (desenvolvimento)
 2. Publique em modo Release (exemplo para Linux x64):
 
 ```bash
-dotnet publish -c Release -r linux-x64 --self-contained true -o publish/linux-x64
+dotnet publish MenuProUI.csproj -c Release -r linux-x64 --self-contained true -o publish/linux-x64
 ```
 
 3. Execute localmente:
@@ -143,7 +143,7 @@ Instalar e remover o pacote
 Instalar:
 
 ```bash
-sudo dpkg -i menupro-ui_1.0.3_amd64.deb
+sudo dpkg -i menupro-ui_1.7.3_amd64.deb
 sudo apt-get install -f
 ```
 

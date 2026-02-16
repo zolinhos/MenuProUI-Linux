@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_NAME="MenuProUI"
 PKG_NAME="menupro-ui"
-VERSION="1.0.4"
+VERSION="1.7.3"
 # default target (can be overridden by loop or env)
 ARCH="amd64"
 RUNTIME="linux-x64"
@@ -17,7 +17,7 @@ STAGE="${PKG_NAME}_${VERSION}_${ARCH}"
 build_package()
 {
   echo "[1/6] Publish (self-contained) ..."
-  dotnet publish -c Release -r "${RUNTIME}" --self-contained true \
+  dotnet publish MenuProUI.csproj -c Release -r "${RUNTIME}" --self-contained true \
     -o "${OUTDIR}" \
     -p:PublishSingleFile=false \
     -p:PublishTrimmed=false

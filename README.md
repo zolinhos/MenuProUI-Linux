@@ -97,3 +97,28 @@ Para dúvidas, sugestões ou reportar problemas:
 Contribuição
 ------------
 Abra issues ou PRs no repositório para melhorias no empacotamento, multi-arch ou documentação.
+
+Release (organização igual ao repositório Mac)
+----------------------------------------------
+
+Arquivos adicionados para padronizar publicação:
+
+- `RELEASE_CHECKLIST.md`
+- `.env.release.example`
+- `scripts/release_preflight.sh`
+- `scripts/release_publish_linux.sh`
+- `scripts/publish_github_release.py`
+
+Fluxo recomendado:
+
+```bash
+cp .env.release.example .env.release
+bash scripts/release_publish_linux.sh 1.0.4
+```
+
+O script executa automaticamente:
+
+- preflight de validação
+- build do `.deb`
+- criação/push da tag `v<versão>`
+- criação/atualização da release no GitHub e upload do `.deb`

@@ -38,3 +38,8 @@ menupro-ui_*/
 *.tmp
 *.bak
 *.temp
+
+# Release workflow artifacts
+publish/
+dist/
+.env.release

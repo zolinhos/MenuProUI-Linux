@@ -43,3 +43,8 @@ menupro-ui_*/
 publish/
 dist/
 .env.release
+
+!dist/
+dist/*
+!dist/.gitkeep
+!dist/README.md

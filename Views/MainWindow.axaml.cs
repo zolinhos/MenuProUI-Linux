@@ -289,9 +289,9 @@ Todos: Apelido, Observações
 ════════════════════════════════════════════
 
 📚 DÚVIDAS OU SUGESTÕES?
-GitHub: https://github.com/adrianotech/MenuProUI-Linux
-Issues: https://github.com/adrianotech/MenuProUI-Linux/issues
-Discussions: https://github.com/adrianotech/MenuProUI-Linux/discussions
+GitHub: https://github.com/zolinhos/MenuProUI-Linux
+Issues: https://github.com/zolinhos/MenuProUI-Linux/issues
+Discussions: https://github.com/zolinhos/MenuProUI-Linux/discussions
 
 Versão 1.0.4 - MenuProUI";
 

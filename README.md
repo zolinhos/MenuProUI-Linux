@@ -92,7 +92,7 @@ GitHub & Suporte
 
 Para dúvidas, sugestões ou reportar problemas:
 
-👉 https://github.com/adrianotech/MenuProUI-Linux
+👉 https://github.com/zolinhos/MenuProUI-Linux
 
 Contribuição
 ------------

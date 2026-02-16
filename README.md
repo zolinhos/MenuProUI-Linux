@@ -9,6 +9,10 @@ MenuProUI é um gerenciador de acessos (SSH, RDP e URLs) organizado por clientes
 - ⌨️ 15 atalhos de teclado para máxima produtividade
 - 💾 Persistência de dados em CSV (fácil backup e migração)
 - 🚀 Lançamento direto de SSH, RDP e URLs
+- 🌐 Normalização de URL com HTTPS padrão
+- 📡 Checagem manual de conectividade (cliente atual ou todos)
+- 🟢 Indicador visual por acesso (online/offline/checking/unknown)
+- 📄 Clonagem rápida de acesso
 - 📚 Sistema de ajuda integrado (F1)
 - 🔗 Links para GitHub e suporte
 
@@ -71,6 +75,8 @@ Atalhos de Teclado
 | **Ctrl+L** | Limpar busca |
 | **Ctrl+N** | Novo Cliente |
 | **Ctrl+Shift+N** | Novo Acesso |
+| **Ctrl+Shift+D** | Clonar Acesso |
+| **Ctrl+Shift+K** | Checar Conectividade (escopo) |
 | **Ctrl+E** | Editar Cliente |
 | **Ctrl+Shift+E** | Editar Acesso |
 | **Ctrl+Delete** | Excluir Cliente |

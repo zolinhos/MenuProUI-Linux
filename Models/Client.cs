@@ -1,4 +1,5 @@
 using System;
+using CsvHelper.Configuration.Attributes;
 
 namespace MenuProUI.Models;
 
@@ -22,6 +23,20 @@ public class Client
     
     /// <summary>Data e hora da última atualização (UTC)</summary>
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Status de conectividade agregado do cliente (não persistido em CSV).</summary>
+    [Ignore]
+    public ConnectivityState ConnectivityState { get; set; } = ConnectivityState.Unknown;
+
+    /// <summary>Badge visual simples para exibição do status agregado.</summary>
+    [Ignore]
+    public string ConnectivityBadge => ConnectivityState switch
+    {
+        ConnectivityState.Online => "🟢",
+        ConnectivityState.Offline => "🔴",
+        ConnectivityState.Checking => "🟡",
+        _ => "⚪"
+    };
 
     /// <summary>Retorna o nome do cliente como representação em string</summary>
     public override string ToString() => Nome;

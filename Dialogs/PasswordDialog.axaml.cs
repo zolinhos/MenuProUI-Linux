@@ -13,6 +13,10 @@ public partial class PasswordDialog : Window
 {
     public string Password => PasswordBox.Text ?? "";
 
+    public PasswordDialog() : this("Senha")
+    {
+    }
+
     public PasswordDialog(string title)
     {
         InitializeComponent();

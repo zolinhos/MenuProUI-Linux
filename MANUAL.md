@@ -102,8 +102,21 @@ Uso básico (GUI)
 - Ao abrir o app, a coluna esquerda lista os `Clientes` e a coluna direita exibe os `Acessos` do cliente selecionado.
 - Botões principais no topo (arquivo `Views/MainWindow.axaml`):
   - `Novo Cliente`, `Editar Cliente`, `Excluir Cliente` — gerenciam clientes.
-  - `Novo Acesso`, `Editar Acesso`, `Excluir Acesso`, `Abrir` — gerenciam e iniciam acessos.
+  - `Novo Acesso`, `Clonar Acesso`, `Editar Acesso`, `Excluir Acesso`, `Abrir` — gerenciam e iniciam acessos.
+  - `Checar Conectividade` — permite escolher escopo (cliente selecionado ou todos) e testa TCP dos acessos.
+  - Coluna `Net` na lista de acessos: `⚪` não checado, `🟡` checando, `🟢` online, `🔴` offline.
+  - Lista de clientes também exibe indicador agregado de conectividade com a mesma legenda visual.
 - Para abrir um acesso: selecione um acesso e clique em `Abrir` ou dê `DoubleTap`/duplo clique.
+
+Conectividade (alinhamento com versão Mac)
+------------------------------------------
+
+- A checagem é manual (sem auto-refresh), com timeout curto por acesso.
+- Portas padrão usadas na validação quando ausentes:
+  - SSH: `22`
+  - RDP: `3389`
+  - URL: `443`
+- O resultado é exibido em resumo por escopo (cliente atual ou todos os clientes).
 
 Comportamento de migração
 -------------------------

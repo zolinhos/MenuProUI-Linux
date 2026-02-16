@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -21,6 +22,8 @@ public partial class MainWindow : Window
 {
     /// <summary>Atalho para acessar o ViewModel (DataContext da janela)</summary>
     private MainWindowViewModel VM => (MainWindowViewModel)DataContext!;
+    private readonly Dictionary<Guid, ConnectivityState> _connectivityStatusByAccessId = new();
+    private readonly Dictionary<Guid, ConnectivityState> _connectivityStatusByClientId = new();
 
     /// <summary>
     /// Inicializa a janela principal.
@@ -136,6 +139,22 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // Ctrl+Shift+K - Checar conectividade
+            if (hasCtrl && hasShift && e.Key == Key.K)
+            {
+                e.Handled = true;
+                await OpenConnectivityScopeChooser();
+                return;
+            }
+
+            // Ctrl+Shift+D - Clonar acesso
+            if (hasCtrl && hasShift && e.Key == Key.D)
+            {
+                e.Handled = true;
+                OnCloneAccess(null, new RoutedEventArgs());
+                return;
+            }
+
             // Ctrl+E - Editar Cliente
             if (hasCtrl && !hasShift && e.Key == Key.E)
             {
@@ -227,8 +246,10 @@ Clientes:
 
 Acessos:
   Ctrl+Shift+N          Novo acesso
+    Ctrl+Shift+D          Clonar acesso selecionado
   Ctrl+Shift+E          Editar acesso selecionado
   Ctrl+Shift+Delete     Excluir acesso selecionado
+    Ctrl+Shift+K          Checar conectividade (cliente/todos)
   Enter                 Abre/conecta ao acesso selecionado
   Ctrl+Shift+F          Focar campo de busca de acessos
 
@@ -306,6 +327,7 @@ Versão 1.0.4 - MenuProUI";
     private void OnClientSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         VM.SetSelectedClient(VM.SelectedClient);
+        ApplyConnectivityStatusesToCurrentAccesses();
     }
 
     /// <summary>
@@ -316,6 +338,218 @@ Versão 1.0.4 - MenuProUI";
     {
         CloseMenus();
         VM.Reload();
+        ApplyConnectivityStatusesToCurrentAccesses();
+    }
+
+    private async void OnCheckConnectivity(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        await OpenConnectivityScopeChooser();
+    }
+
+    private async Task OpenConnectivityScopeChooser()
+    {
+        var dlg = new ConnectivityScopeDialog();
+        var scope = await dlg.ShowDialog<ConnectivityScope>(this);
+        if (scope == ConnectivityScope.Cancel) return;
+
+        if (scope == ConnectivityScope.AllClients)
+        {
+            await CheckAllClientsConnectivity();
+        }
+        else
+        {
+            await CheckSelectedClientConnectivity();
+        }
+    }
+
+    private async Task CheckSelectedClientConnectivity()
+    {
+        if (VM.SelectedClient is null)
+        {
+            await new ConfirmDialog("Selecione um cliente para checar conectividade.", "Atenção")
+                .ShowDialog<bool>(this);
+            return;
+        }
+
+        var rows = VM.Accesses.ToList();
+        if (rows.Count == 0)
+        {
+            await new ConfirmDialog("Este cliente não possui acessos para checar.", "Conectividade")
+                .ShowDialog<bool>(this);
+            return;
+        }
+
+        var online = 0;
+        var offline = 0;
+        var failedAliases = new List<string>();
+
+        foreach (var entry in rows)
+        {
+            entry.ConnectivityState = ConnectivityState.Checking;
+            _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Checking;
+        }
+        VM.ApplyAccessesFilter();
+
+        foreach (var entry in rows)
+        {
+            var target = ResolveProbeTarget(entry);
+            var host = target.host;
+            var port = target.port;
+
+            var ok = await ConnectivityChecker.CheckTcpAsync(host, port, TimeSpan.FromSeconds(3));
+            if (ok)
+            {
+                online++;
+                entry.ConnectivityState = ConnectivityState.Online;
+                _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Online;
+            }
+            else
+            {
+                offline++;
+                failedAliases.Add(string.IsNullOrWhiteSpace(entry.Apelido) ? "(sem apelido)" : entry.Apelido);
+                entry.ConnectivityState = ConnectivityState.Offline;
+                _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
+            }
+        }
+
+        VM.ApplyAccessesFilter();
+
+        var details = failedAliases.Count > 0
+            ? "\n\nOffline: " + string.Join(", ", failedAliases.Take(8)) + (failedAliases.Count > 8 ? "..." : "")
+            : "";
+
+        await new ConfirmDialog(
+            $"Cliente: {VM.SelectedClient.Nome}\nTotal: {rows.Count}\nOnline: {online}\nOffline: {offline}{details}",
+            "Resultado da Conectividade")
+            .ShowDialog<bool>(this);
+    }
+
+    private async Task CheckAllClientsConnectivity()
+    {
+        var repo = new CsvRepository();
+        var (_, allAccesses) = repo.Load();
+        if (allAccesses.Count == 0)
+        {
+            await new ConfirmDialog("Não há acessos cadastrados para checar conectividade.", "Conectividade")
+                .ShowDialog<bool>(this);
+            return;
+        }
+
+        foreach (var entry in allAccesses)
+            _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Checking;
+
+        ApplyConnectivityStatusesToCurrentAccesses();
+
+        var online = 0;
+        var offline = 0;
+
+        foreach (var entry in allAccesses)
+        {
+            var target = ResolveProbeTarget(entry);
+            var ok = await ConnectivityChecker.CheckTcpAsync(target.host, target.port, TimeSpan.FromSeconds(3));
+
+            if (ok)
+            {
+                online++;
+                _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Online;
+            }
+            else
+            {
+                offline++;
+                _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
+            }
+        }
+
+        ApplyConnectivityStatusesToCurrentAccesses();
+
+        await new ConfirmDialog(
+            $"Escopo: Todos os clientes\nTotal: {allAccesses.Count}\nOnline: {online}\nOffline: {offline}",
+            "Resultado da Conectividade")
+            .ShowDialog<bool>(this);
+    }
+
+    private (string host, int port) ResolveProbeTarget(AccessEntry entry)
+    {
+        if (entry.Tipo == AccessType.URL)
+            return ResolveUrlHostPort(entry.Url);
+
+        var host = entry.Host ?? "";
+        var port = entry.Tipo switch
+        {
+            AccessType.SSH => (entry.Porta is > 0 and <= 65535) ? entry.Porta!.Value : 22,
+            AccessType.RDP => (entry.Porta is > 0 and <= 65535) ? entry.Porta!.Value : 3389,
+            _ => 443
+        };
+
+        return (host, port);
+    }
+
+    private static (string host, int port) ResolveUrlHostPort(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return ("", 443);
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var parsed))
+            return (parsed.Host, parsed.Port > 0 ? parsed.Port : 443);
+
+        if (Uri.TryCreate("https://" + url, UriKind.Absolute, out parsed))
+            return (parsed.Host, parsed.Port > 0 ? parsed.Port : 443);
+
+        return ("", 443);
+    }
+
+    private void ApplyConnectivityStatusesToCurrentAccesses()
+    {
+        foreach (var entry in VM.Accesses)
+        {
+            entry.ConnectivityState = _connectivityStatusByAccessId.TryGetValue(entry.Id, out var status)
+                ? status
+                : ConnectivityState.Unknown;
+        }
+
+        VM.ApplyAccessesFilter();
+        ApplyClientConnectivityStatuses();
+    }
+
+    private void ApplyClientConnectivityStatuses()
+    {
+        var repo = new CsvRepository();
+        var (_, allAccesses) = repo.Load();
+        var accessesByClient = allAccesses
+            .GroupBy(a => a.ClientId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var client in VM.Clients)
+        {
+            var aggregated = ResolveClientState(client.Id, accessesByClient);
+            client.ConnectivityState = aggregated;
+            _connectivityStatusByClientId[client.Id] = aggregated;
+        }
+
+        VM.ApplyClientFilter();
+    }
+
+    private ConnectivityState ResolveClientState(Guid clientId, Dictionary<Guid, List<AccessEntry>> accessesByClient)
+    {
+        if (!accessesByClient.TryGetValue(clientId, out var accesses) || accesses.Count == 0)
+            return ConnectivityState.Unknown;
+
+        var statuses = accesses
+            .Select(a => _connectivityStatusByAccessId.TryGetValue(a.Id, out var status)
+                ? status
+                : ConnectivityState.Unknown)
+            .ToList();
+
+        if (statuses.Any(s => s == ConnectivityState.Checking))
+            return ConnectivityState.Checking;
+
+        if (statuses.Any(s => s == ConnectivityState.Offline))
+            return ConnectivityState.Offline;
+
+        if (statuses.Any(s => s == ConnectivityState.Online))
+            return ConnectivityState.Online;
+
+        return ConnectivityState.Unknown;
     }
 
     // ============== HANDLERS DE CLIENTES ==============
@@ -477,6 +711,64 @@ Versão 1.0.4 - MenuProUI";
 
         VM.SaveAll();
         VM.RefreshAccesses();
+    }
+
+    private async void OnCloneAccess(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        if (VM.SelectedAccess is null) return;
+
+        var source = VM.SelectedAccess;
+        var clone = new AccessEntry
+        {
+            Id = Guid.NewGuid(),
+            ClientId = source.ClientId,
+            Tipo = source.Tipo,
+            Apelido = BuildCloneAlias(source.Apelido),
+            Host = source.Host,
+            Porta = source.Porta,
+            Usuario = source.Usuario,
+            Dominio = source.Dominio,
+            RdpIgnoreCert = source.RdpIgnoreCert,
+            RdpFullScreen = source.RdpFullScreen,
+            RdpDynamicResolution = source.RdpDynamicResolution,
+            RdpWidth = source.RdpWidth,
+            RdpHeight = source.RdpHeight,
+            Url = source.Url,
+            Observacoes = source.Observacoes,
+            CriadoEm = DateTime.UtcNow,
+            AtualizadoEm = DateTime.UtcNow
+        };
+
+        var dlg = new AccessDialog(clone);
+        var ok = await dlg.ShowDialog<bool>(this);
+        if (!ok) return;
+
+        var created = dlg.Result;
+        created.Id = Guid.NewGuid();
+        created.ClientId = source.ClientId;
+        created.CriadoEm = DateTime.UtcNow;
+        created.AtualizadoEm = DateTime.UtcNow;
+
+        VM.Accesses.Add(created);
+        VM.SaveAll();
+        VM.RefreshAccesses();
+        VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == created.Id) ?? VM.Accesses.LastOrDefault();
+    }
+
+    private string BuildCloneAlias(string alias)
+    {
+        var baseAlias = string.IsNullOrWhiteSpace(alias) ? "Acesso" : alias.Trim();
+        var candidate = baseAlias + " (cópia)";
+        var i = 2;
+
+        while (VM.Accesses.Any(a => string.Equals(a.Apelido, candidate, StringComparison.OrdinalIgnoreCase)))
+        {
+            candidate = $"{baseAlias} (cópia {i})";
+            i++;
+        }
+
+        return candidate;
     }
 
     /// <summary>

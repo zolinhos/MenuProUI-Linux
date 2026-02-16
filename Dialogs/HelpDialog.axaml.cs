@@ -9,6 +9,10 @@ namespace MenuProUI.Dialogs;
 /// </summary>
 public partial class HelpDialog : Window
 {
+    public HelpDialog() : this("")
+    {
+    }
+
     /// <summary>Inicializa o diálogo de ajuda com o conteúdo fornecido</summary>
     /// <param name="helpText">Texto de ajuda a ser exibido</param>
     public HelpDialog(string helpText)

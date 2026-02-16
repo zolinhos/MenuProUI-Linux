@@ -4,6 +4,10 @@ namespace MenuProUI.Dialogs;
 
 public partial class ConfirmDialog : Window
 {
+    public ConfirmDialog() : this("")
+    {
+    }
+
     public ConfirmDialog(string message, string title = "Confirmar")
     {
         InitializeComponent();

@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MenuProUI.Dialogs.ConnectivityScopeDialog"
+        Width="560" Height="220"
+        WindowStartupLocation="CenterOwner"
+        Title="Checar Conectividade"
+        CanResize="False">
+  <Grid RowDefinitions="*,Auto" Margin="16">
+    <TextBlock Name="Msg" TextWrapping="Wrap" FontSize="15"
+               Text="Deseja checar conectividade somente do cliente selecionado ou de todos os clientes?"/>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,16,0,0">
+      <Button Content="Cancelar" Click="OnCancel"/>
+      <Button Content="Somente este cliente" Click="OnSelectedClient"/>
+      <Button Content="Todos os clientes" Click="OnAllClients"/>
+    </StackPanel>
+  </Grid>
+</Window>

@@ -7,6 +7,10 @@ public partial class ClientDialog : Window
 {
     public Client Result { get; private set; }
 
+    public ClientDialog() : this(new Client())
+    {
+    }
+
     public ClientDialog(Client initial)
     {
         InitializeComponent();

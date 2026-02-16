@@ -191,12 +191,19 @@ public static class AccessLauncher
     {
         if (string.IsNullOrWhiteSpace(url)) return;
 
+        var candidate = url.Trim();
+        if (!candidate.Contains("://", StringComparison.Ordinal))
+            candidate = "https://" + candidate;
+
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var parsed))
+            return;
+
         var psi = new ProcessStartInfo
         {
             FileName = "xdg-open",
             UseShellExecute = false
         };
-        psi.ArgumentList.Add(url);
+        psi.ArgumentList.Add(parsed.ToString());
         Process.Start(psi);
     }
 

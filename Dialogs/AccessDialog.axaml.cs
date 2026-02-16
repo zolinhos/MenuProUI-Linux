@@ -8,6 +8,10 @@ public partial class AccessDialog : Window
 {
     public AccessEntry Result { get; private set; }
 
+    public AccessDialog() : this(new AccessEntry())
+    {
+    }
+
     public AccessDialog(AccessEntry initial)
     {
         InitializeComponent();
@@ -89,7 +93,7 @@ public partial class AccessDialog : Window
             var url = (UrlBox.Text ?? "").Trim();
             if (string.IsNullOrWhiteSpace(url)) return;
 
-            Result.Url = url;
+            Result.Url = NormalizeUrl(url);
 
             Result.Host = null;
             Result.Usuario = null;
@@ -151,6 +155,27 @@ public partial class AccessDialog : Window
         s = (s ?? "").Trim();
         if (int.TryParse(s, out var v) && v > 0) return v;
         return null;
+    }
+
+    private static string NormalizeUrl(string input)
+    {
+        var value = (input ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(value)) return "https://";
+
+        if (!value.Contains("://", StringComparison.Ordinal))
+            value = "https://" + value;
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            return value;
+
+        var builder = new UriBuilder(uri)
+        {
+            Scheme = string.IsNullOrWhiteSpace(uri.Scheme) ? "https" : uri.Scheme,
+            Port = uri.IsDefaultPort ? 443 : uri.Port,
+            Path = string.IsNullOrWhiteSpace(uri.AbsolutePath) ? "/" : uri.AbsolutePath
+        };
+
+        return builder.Uri.ToString();
     }
 
     private void OnCancel(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close(false);

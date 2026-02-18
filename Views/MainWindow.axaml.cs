@@ -9,6 +9,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using MenuProUI.Dialogs;
 using MenuProUI.Models;
 using MenuProUI.Services;
@@ -379,7 +380,8 @@ Versão 1.8.0 - MenuProUI";
     private void OnClientSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         VM.SetSelectedClient(VM.SelectedClient);
-        ApplyConnectivityStatusesToCurrentAccesses();
+        // Evita mutar coleções vinculadas durante o evento de seleção do ListBox.
+        Dispatcher.UIThread.Post(ApplyConnectivityStatusesToCurrentAccesses, DispatcherPriority.Background);
     }
 
     private async void OnAccessSelectionChanged(object? sender, SelectionChangedEventArgs e)

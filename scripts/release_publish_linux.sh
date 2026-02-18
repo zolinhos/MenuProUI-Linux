@@ -9,7 +9,7 @@ fi
 APP_NAME="${APP_NAME:-MenuProUI-Linux}"
 PKG_NAME="${PKG_NAME:-menupro-ui}"
 DIST_DIR="${DIST_DIR:-dist}"
-DEFAULT_VERSION="${DEFAULT_VERSION:-1.7.3}"
+DEFAULT_VERSION="${DEFAULT_VERSION:-1.9.0}"
 ARCH="${ARCH:-amd64}"
 OWNER_REPO_INPUT="${2:-${GITHUB_REPO:-}}"
 
@@ -93,8 +93,9 @@ ${RELEASE_NAME}
 
 ## Novidades
 - Alinhamento funcional com a versão macOS
-- Conectividade manual por escopo (cliente atual ou todos)
-- Indicadores visuais de conectividade por acesso e agregado por cliente
+- Conectividade avançada (TCP + fallback nmap/nc + fallback de portas URL)
+- Configurações avançadas (auto-check, debounce, teste/revalidação nmap, proteção CSV injection)
+- Auditoria com indicador de integridade na barra e restauração do último backup pela UI
 
 ## Arquivos
 - $(basename "$DEB_PATH")
@@ -111,7 +112,10 @@ echo "==> [2/4] Criar tag ${TAG} (se necessário)"
 if git rev-parse "${TAG}" >/dev/null 2>&1; then
   echo "Tag local já existe: ${TAG}"
 else
-  git tag -a "$TAG" -m "Release ${TAG}"
+  if ! git tag -a "$TAG" -m "Release ${TAG}"; then
+    echo "Falha ao criar tag anotada. Tentando tag leve..."
+    git tag "$TAG"
+  fi
 fi
 
 echo "==> [3/4] Publicar tag no origin"

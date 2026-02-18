@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using MenuProUI.Models;
+using MenuProUI.Services;
 
 namespace MenuProUI.Dialogs;
 
@@ -33,6 +36,10 @@ public partial class AccessDialog : Window
             RdpHeight = initial.RdpHeight,
             Url = initial.Url,
             Observacoes = initial.Observacoes,
+            Tags = initial.Tags,
+            IsFavorite = initial.IsFavorite,
+            OpenCount = initial.OpenCount,
+            LastOpenedAt = initial.LastOpenedAt,
             CriadoEm = initial.CriadoEm,
             AtualizadoEm = initial.AtualizadoEm
         };
@@ -41,6 +48,7 @@ public partial class AccessDialog : Window
         TypeBox.SelectedItem = Result.Tipo;
 
         AliasBox.Text = Result.Apelido;
+        TagsBox.Text = Result.Tags ?? "";
 
         HostBox.Text = Result.Host ?? "";
         PortBox.Text = Result.Porta?.ToString() ?? "";
@@ -56,6 +64,7 @@ public partial class AccessDialog : Window
 
         UrlBox.Text = Result.Url ?? "";
         NotesBox.Text = Result.Observacoes ?? "";
+        FavoriteBox.IsChecked = Result.IsFavorite;
 
         ApplyPanels();
     }
@@ -86,7 +95,9 @@ public partial class AccessDialog : Window
 
         Result.Tipo = tipo;
         Result.Apelido = alias;
+        Result.Tags = (TagsBox.Text ?? "").Trim();
         Result.Observacoes = NotesBox.Text;
+        Result.IsFavorite = FavoriteBox.IsChecked == true;
 
         if (tipo == AccessType.URL)
         {
@@ -179,4 +190,52 @@ public partial class AccessDialog : Window
     }
 
     private void OnCancel(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close(false);
+
+    private async void OnTestUrl(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var raw = (UrlBox.Text ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            UrlTestResultText.Text = "Informe uma URL para testar.";
+            return;
+        }
+
+        var normalized = NormalizeUrl(raw);
+        UrlBox.Text = normalized;
+        UrlTestResultText.Text = "Testando...";
+        TestUrlButton.IsEnabled = false;
+
+        try
+        {
+            var probeEntry = new AccessEntry
+            {
+                Tipo = AccessType.URL,
+                Url = normalized
+            };
+
+            var fallbackPorts = ParseFallbackPorts("443,80,8443,8080,9443");
+            var result = await ConnectivityChecker.CheckAccessDetailedAsync(
+                probeEntry,
+                TimeSpan.FromSeconds(3),
+                fallbackPorts);
+
+            UrlTestResultText.Text = result.IsOnline
+                ? $"Online ({result.Method} porta {result.EffectivePort})"
+                : $"Offline ({result.ErrorDetail})";
+        }
+        finally
+        {
+            TestUrlButton.IsEnabled = true;
+        }
+    }
+
+    private static int[] ParseFallbackPorts(string csv)
+    {
+        return (csv ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => int.TryParse(x, out var p) ? p : 0)
+            .Where(p => p is >= 1 and <= 65535)
+            .Distinct()
+            .ToArray();
+    }
 }

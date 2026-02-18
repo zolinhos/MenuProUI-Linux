@@ -1,4 +1,4 @@
-# MenuProUI v1.7.3
+# MenuProUI v1.9.0
 
 MenuProUI é um gerenciador de acessos (SSH, RDP e URLs) organizado por clientes.
 
@@ -11,8 +11,17 @@ MenuProUI é um gerenciador de acessos (SSH, RDP e URLs) organizado por clientes
 - 🚀 Lançamento direto de SSH, RDP e URLs
 - 🌐 Normalização de URL com HTTPS padrão
 - 📡 Checagem manual de conectividade (cliente atual ou todos)
+- 🌐 URL com fallback de portas configuráveis (ex.: 443,80,8443,8080,9443)
+- 🧪 Fallback de conectividade com `nmap` e `nc` (quando disponíveis)
 - 🟢 Indicador visual por acesso (online/offline/checking/unknown)
+- 🛡️ Indicador de integridade de auditoria na barra superior
 - 📄 Clonagem rápida de acesso
+- ⭐ Favoritos por acesso + contador de aberturas/último acesso
+- 🧾 Auditoria com `eventos.csv` + integridade encadeada (`eventos.chain`)
+- 📦 Exportação/importação de CSVs com backup e rollback
+- ♻️ Restauração do último backup via Configurações
+- ⚙️ Configurações avançadas: auto-check por seleção, debounce, teste/revalidação nmap, proteção CSV injection
+- 🔎 Teste inline de URL no diálogo de acesso
 - 📚 Sistema de ajuda integrado (F1)
 - 🔗 Links para GitHub e suporte
 
@@ -57,9 +66,12 @@ Instalação do .deb
 ------------------
 
 ```bash
-sudo dpkg -i menupro-ui_1.7.3_amd64.deb
+sudo dpkg -i menupro-ui_1.9.0_amd64.deb
 sudo apt-get install -f
 ```
+
+O `.deb` declara dependências de runtime para resolução automática via APT (`xdg-utils`, `openssh-client`, `freerdp` e libs gráficas X11/GTK).
+O instalador também executa uma checagem simples de comandos essenciais no `preinst`.
 
 Atalhos de Teclado
 ------------------
@@ -82,6 +94,22 @@ Atalhos de Teclado
 | **Ctrl+Delete** | Excluir Cliente |
 | **Ctrl+Shift+Delete** | Excluir Acesso |
 | **Enter** | Lançar Acesso (SSH/RDP/URL) |
+| **Ctrl+.** | Favoritar/Desfavoritar Acesso |
+| **Ctrl+Shift+B** | Exportar CSVs (snapshot em `~/.config/MenuProUI/exports`) |
+| **Ctrl+Shift+I** | Importar CSVs de `~/.config/MenuProUI/imports` |
+| **Ctrl+Shift+J** | Abrir auditoria (últimos 200 eventos) |
+| **Ctrl+Shift+S** | Abrir configurações de conectividade |
+
+Auditoria:
+- Filtros por ação, entidade e termo textual
+- Ordenação por data/ação/entidade/nome
+- Exportação do resultado filtrado em CSV e JSON
+
+Conectividade:
+- Timeout, concorrência e portas fallback configuráveis em Configurações
+- Auto-check opcional ao selecionar acesso (com debounce configurável)
+- Probes por `tcp`, `nmap` e `nc` (quando instalados no sistema)
+- Resultado com diagnóstico resumido de falha (DNS, timeout, conexão recusada, host indisponível)
 
 Documentação
 -------------
@@ -113,7 +141,7 @@ Fluxo recomendado:
 
 ```bash
 cp .env.release.example .env.release
-bash scripts/release_publish_linux.sh 1.7.3
+bash scripts/release_publish_linux.sh 1.9.0
 ```
 
 O script executa automaticamente:

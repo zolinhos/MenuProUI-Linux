@@ -75,7 +75,7 @@ else
 fi
 
 echo "==> Build de validação"
-dotnet build >/dev/null
+AVALONIA_TELEMETRY_OPTOUT=1 dotnet build >/dev/null
 ok "Build release"
 
 echo "==> Preflight concluído para ${VERSION}"

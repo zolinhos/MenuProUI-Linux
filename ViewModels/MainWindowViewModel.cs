@@ -130,7 +130,7 @@ public partial class MainWindowViewModel : ObservableObject
         // Se nenhum cliente selecionado, exibe todos os acessos
         if (SelectedClient is null)
         {
-            foreach (var a in source.OrderBy(a => a.Tipo).ThenBy(a => a.Apelido))
+            foreach (var a in source.OrderByDescending(a => a.IsFavorite).ThenBy(a => a.Tipo).ThenBy(a => a.Apelido))
                 Accesses.Add(a);
             ApplyAccessesFilter();
             return;
@@ -138,7 +138,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         // Filtra acessos do cliente selecionado
         foreach (var a in source.Where(a => a.ClientId == SelectedClient.Id)
-                                .OrderBy(a => a.Tipo).ThenBy(a => a.Apelido))
+                                .OrderByDescending(a => a.IsFavorite).ThenBy(a => a.Tipo).ThenBy(a => a.Apelido))
             Accesses.Add(a);
 
         // Seleciona o primeiro acesso como padrão
@@ -255,7 +255,8 @@ public partial class MainWindowViewModel : ObservableObject
                 (x.Host ?? "").ToLower().Contains(search) ||
                 (x.Usuario ?? "").ToLower().Contains(search) ||
                 (x.Url ?? "").ToLower().Contains(search) ||
-                (x.Dominio ?? "").ToLower().Contains(search)))
+                (x.Dominio ?? "").ToLower().Contains(search) ||
+                (x.Tags ?? "").ToLower().Contains(search)))
                 AccessesFiltered.Add(a);
         }
         

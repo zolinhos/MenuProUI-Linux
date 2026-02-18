@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export AVALONIA_TELEMETRY_OPTOUT=1
 
 APP_NAME="MenuProUI"
 PKG_NAME="menupro-ui"
-VERSION="1.7.3"
+VERSION="1.9.0"
 # default target (can be overridden by loop or env)
 ARCH="amd64"
 RUNTIME="linux-x64"
@@ -74,12 +75,31 @@ Section: utils
 Priority: optional
 Architecture: ${ARCH}
 Maintainer: Adriano Dias de Jesus <adriano@voceconfia.com.br>
-Depends: xdg-utils, openssh-client, freerdp2-x11 | freerdp3-x11 | freerdp-x11
+Depends: xdg-utils, openssh-client, freerdp2-x11 | freerdp3-x11 | freerdp-x11, libgtk-3-0, libx11-6, libxrandr2, libxinerama1, libxcursor1, libxi6, libxext6, libxrender1, libxtst6, libglib2.0-0, libfontconfig1
 Description: MenuProUI - gerenciador de acessos SSH/RDP/URLs
  Aplicação Avalonia para organizar acessos por cliente, com exportação em CSV.
  Não armazena senhas.
 CTRL
   chmod 0644 "${STAGE}/DEBIAN/control"
+
+  cat > "${STAGE}/DEBIAN/preinst" <<'PRE'
+#!/usr/bin/env bash
+set -e
+missing=0
+for cmd in xdg-open ssh; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Aviso: comando nao encontrado durante preinst: $cmd"
+    missing=1
+  fi
+done
+
+if [ "$missing" -eq 1 ]; then
+  echo "O pacote declara dependencias e o APT deve instala-las automaticamente."
+  echo "Se necessario, execute: sudo apt-get -f install"
+fi
+exit 0
+PRE
+  chmod 0755 "${STAGE}/DEBIAN/preinst"
 
   cat > "${STAGE}/DEBIAN/postinst" <<'POST'
 #!/usr/bin/env bash

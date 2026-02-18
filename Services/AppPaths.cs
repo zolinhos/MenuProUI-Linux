@@ -31,6 +31,27 @@ public static class AppPaths
     /// <summary>Caminho completo do arquivo CSV com a lista de acessos</summary>
     public static string AccessesPath => Path.Combine(AppDir, "acessos.csv");
 
+    /// <summary>Caminho completo do arquivo CSV de auditoria de eventos</summary>
+    public static string EventsPath => Path.Combine(AppDir, "eventos.csv");
+
+    /// <summary>Caminho completo do arquivo de integridade encadeada dos eventos</summary>
+    public static string EventsChainPath => Path.Combine(AppDir, "eventos.chain");
+
+    /// <summary>Diretório para snapshots de backup de importação/exportação</summary>
+    public static string BackupsDir => EnsureDir(Path.Combine(AppDir, "backups"));
+
+    /// <summary>Diretório padrão para exportação de CSVs</summary>
+    public static string ExportDir => EnsureDir(Path.Combine(AppDir, "exports"));
+
+    /// <summary>Diretório padrão para importação de CSVs</summary>
+    public static string ImportDir => EnsureDir(Path.Combine(AppDir, "imports"));
+
     /// <summary>Caminho legado do arquivo de acessos (usado em versões antigas)</summary>
     public static string LegacyAccessesPath => Path.Combine(AppDir, "acessos_legacy.csv");
+
+    private static string EnsureDir(string path)
+    {
+        Directory.CreateDirectory(path);
+        return path;
+    }
 }

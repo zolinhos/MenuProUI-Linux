@@ -11,6 +11,9 @@
       <TextBlock Text="Apelido" />
       <TextBox Name="AliasBox"/>
 
+      <TextBlock Text="Tags (opcional)" />
+      <TextBox Name="TagsBox" Watermark="infra, producao, vpn"/>
+
       <TextBlock Text="Tipo" />
       <ComboBox Name="TypeBox" SelectionChanged="OnTypeChanged"/>
 
@@ -54,10 +57,15 @@
       <StackPanel Name="PanelUrl" Spacing="10">
         <TextBlock Text="URL" />
         <TextBox Name="UrlBox" Watermark="https://firewall.local:4444"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Name="TestUrlButton" Content="Testar URL" Click="OnTestUrl"/>
+          <TextBlock Name="UrlTestResultText" Text="" Opacity="0.85" VerticalAlignment="Center"/>
+        </StackPanel>
       </StackPanel>
 
       <TextBlock Text="Observações" />
       <TextBox Name="NotesBox" AcceptsReturn="True" Height="110"/>
+      <CheckBox Name="FavoriteBox" Content="Marcar como favorito" />
 
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,10,0,0">
         <Button Content="Cancelar" Click="OnCancel"/>

@@ -2,10 +2,13 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using MenuProUI.Dialogs;
 using MenuProUI.Models;
 using MenuProUI.Services;
@@ -22,8 +25,13 @@ public partial class MainWindow : Window
 {
     /// <summary>Atalho para acessar o ViewModel (DataContext da janela)</summary>
     private MainWindowViewModel VM => (MainWindowViewModel)DataContext!;
+    private readonly CsvRepository _repo = new();
+    private readonly EventLogger _eventLogger = new();
+    private readonly SettingsRepository _settingsRepo = new();
     private readonly Dictionary<Guid, ConnectivityState> _connectivityStatusByAccessId = new();
     private readonly Dictionary<Guid, ConnectivityState> _connectivityStatusByClientId = new();
+    private AppSettings _currentSettings = new();
+    private CancellationTokenSource? _autoCheckCts;
 
     /// <summary>
     /// Inicializa a janela principal.
@@ -33,6 +41,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = new MainWindowViewModel();
+        _currentSettings = _settingsRepo.Load();
 
         // Conecta botões de menu aos handlers de toggle
         var clientsMenuBtn = this.FindControl<Button>("ClientsMenuBtn");
@@ -45,7 +54,10 @@ public partial class MainWindow : Window
 
         // Configura handler para tecla F1 (Help)
         this.KeyDown += MainWindow_KeyDown;
+        UpdateAuditIntegrityStatus();
     }
+
+    private AppSettings Settings => _currentSettings;
 
     /// <summary>Handler para teclas pressionadas - detecta atalhos de teclado</summary>
     private async void MainWindow_KeyDown(object? sender, KeyEventArgs e)
@@ -147,6 +159,37 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // Ctrl+Shift+B - Exportar CSVs
+            if (hasCtrl && hasShift && e.Key == Key.B)
+            {
+                e.Handled = true;
+                await OnExportData();
+                return;
+            }
+
+            // Ctrl+Shift+I - Importar CSVs (de ~/.config/MenuProUI/imports)
+            if (hasCtrl && hasShift && e.Key == Key.I)
+            {
+                e.Handled = true;
+                await OnImportData();
+                return;
+            }
+
+            // Ctrl+Shift+J - Ver auditoria
+            if (hasCtrl && hasShift && e.Key == Key.J)
+            {
+                e.Handled = true;
+                await OnShowAuditLog();
+                return;
+            }
+
+            if (hasCtrl && hasShift && e.Key == Key.S)
+            {
+                e.Handled = true;
+                await OnOpenSettings();
+                return;
+            }
+
             // Ctrl+Shift+D - Clonar acesso
             if (hasCtrl && hasShift && e.Key == Key.D)
             {
@@ -197,6 +240,14 @@ public partial class MainWindow : Window
 
                 e.Handled = true;
                 OnOpenAccess(null, new RoutedEventArgs());
+                return;
+            }
+
+            // Ctrl+. - Favoritar/desfavoritar acesso
+            if (hasCtrl && e.Key == Key.OemPeriod)
+            {
+                e.Handled = true;
+                ToggleFavoriteSelectedAccess();
                 return;
             }
         }
@@ -293,10 +344,11 @@ GitHub: https://github.com/zolinhos/MenuProUI-Linux
 Issues: https://github.com/zolinhos/MenuProUI-Linux/issues
 Discussions: https://github.com/zolinhos/MenuProUI-Linux/discussions
 
-Versão 1.7.3 - MenuProUI";
+Versão 1.8.0 - MenuProUI";
 
         var dlg = new HelpDialog(helpText);
         await dlg.ShowDialog<bool>(this);
+        _eventLogger.Log("help_opened", "ui", "help_dialog", "Ajuda exibida");
     }
 
     /// <summary>
@@ -330,6 +382,41 @@ Versão 1.7.3 - MenuProUI";
         ApplyConnectivityStatusesToCurrentAccesses();
     }
 
+    private async void OnAccessSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        _autoCheckCts?.Cancel();
+        _autoCheckCts?.Dispose();
+        _autoCheckCts = null;
+
+        if (!Settings.ConnectivityAutoCheckOnSelect) return;
+        if (VM.SelectedAccess is null) return;
+        if (VM.SelectedAccess.ConnectivityState == ConnectivityState.Checking) return;
+
+        var cts = new CancellationTokenSource();
+        _autoCheckCts = cts;
+        try
+        {
+            var delay = Math.Clamp(Settings.ConnectivityAutoCheckDebounceMs, 0, 10000);
+            if (delay > 0) await Task.Delay(delay, cts.Token);
+            if (cts.IsCancellationRequested) return;
+
+            var entry = VM.SelectedAccess;
+            entry.ConnectivityState = ConnectivityState.Checking;
+            _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Checking;
+            VM.ApplyAccessesFilter();
+
+            var timeout = TimeSpan.FromSeconds(Settings.ConnectivityTimeoutSeconds);
+            var result = await ConnectivityChecker.CheckAccessDetailedAsync(entry, timeout, ParseFallbackPorts(Settings.ConnectivityUrlFallbackPortsCsv));
+            entry.ConnectivityState = result.IsOnline ? ConnectivityState.Online : ConnectivityState.Offline;
+            _connectivityStatusByAccessId[entry.Id] = entry.ConnectivityState;
+            VM.ApplyAccessesFilter();
+        }
+        catch (OperationCanceledException)
+        {
+            // Seleção mudou durante debounce/checagem.
+        }
+    }
+
     /// <summary>
     /// Handler para botão Recarregar.
     /// Recarrega todos os dados do disco e reaplica filtros.
@@ -339,6 +426,8 @@ Versão 1.7.3 - MenuProUI";
         CloseMenus();
         VM.Reload();
         ApplyConnectivityStatusesToCurrentAccesses();
+        _currentSettings = _settingsRepo.Load();
+        UpdateAuditIntegrityStatus();
     }
 
     private async void OnCheckConnectivity(object? sender, RoutedEventArgs e)
@@ -383,6 +472,7 @@ Versão 1.7.3 - MenuProUI";
         var online = 0;
         var offline = 0;
         var failedAliases = new List<string>();
+        var failedDetails = new List<string>();
 
         foreach (var entry in rows)
         {
@@ -393,12 +483,9 @@ Versão 1.7.3 - MenuProUI";
 
         foreach (var entry in rows)
         {
-            var target = ResolveProbeTarget(entry);
-            var host = target.host;
-            var port = target.port;
-
-            var ok = await ConnectivityChecker.CheckTcpAsync(host, port, TimeSpan.FromSeconds(3));
-            if (ok)
+            var timeout = TimeSpan.FromSeconds(Settings.ConnectivityTimeoutSeconds);
+            var detailed = await ConnectivityChecker.CheckAccessDetailedAsync(entry, timeout, ParseFallbackPorts(Settings.ConnectivityUrlFallbackPortsCsv));
+            if (detailed.IsOnline)
             {
                 online++;
                 entry.ConnectivityState = ConnectivityState.Online;
@@ -408,6 +495,7 @@ Versão 1.7.3 - MenuProUI";
             {
                 offline++;
                 failedAliases.Add(string.IsNullOrWhiteSpace(entry.Apelido) ? "(sem apelido)" : entry.Apelido);
+                failedDetails.Add($"{entry.Apelido}: {detailed.ErrorDetail}");
                 entry.ConnectivityState = ConnectivityState.Offline;
                 _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
             }
@@ -418,11 +506,15 @@ Versão 1.7.3 - MenuProUI";
         var details = failedAliases.Count > 0
             ? "\n\nOffline: " + string.Join(", ", failedAliases.Take(8)) + (failedAliases.Count > 8 ? "..." : "")
             : "";
+        var diag = failedDetails.Count > 0
+            ? "\n\nDiagnóstico: " + string.Join(" | ", failedDetails.Take(5)) + (failedDetails.Count > 5 ? "..." : "")
+            : "";
 
         await new ConfirmDialog(
-            $"Cliente: {VM.SelectedClient.Nome}\nTotal: {rows.Count}\nOnline: {online}\nOffline: {offline}{details}",
+            $"Cliente: {VM.SelectedClient.Nome}\nTotal: {rows.Count}\nOnline: {online}\nOffline: {offline}{details}{diag}",
             "Resultado da Conectividade")
             .ShowDialog<bool>(this);
+        _eventLogger.Log("check_connectivity", "access", VM.SelectedClient.Nome, $"Scope=selected_client; Total={rows.Count}; Online={online}; Offline={offline}");
     }
 
     private async Task CheckAllClientsConnectivity()
@@ -443,30 +535,51 @@ Versão 1.7.3 - MenuProUI";
 
         var online = 0;
         var offline = 0;
+        var failedDetails = new List<string>();
 
-        foreach (var entry in allAccesses)
+        var timeout = TimeSpan.FromSeconds(Settings.ConnectivityTimeoutSeconds);
+        var maxConcurrency = Math.Max(1, Settings.ConnectivityMaxConcurrency);
+        var fallbackPorts = ParseFallbackPorts(Settings.ConnectivityUrlFallbackPortsCsv);
+        using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+        var tasks = allAccesses.Select(async entry =>
         {
-            var target = ResolveProbeTarget(entry);
-            var ok = await ConnectivityChecker.CheckTcpAsync(target.host, target.port, TimeSpan.FromSeconds(3));
+            await semaphore.WaitAsync();
+            try
+            {
+                var detailed = await ConnectivityChecker.CheckAccessDetailedAsync(entry, timeout, fallbackPorts);
+                lock (_connectivityStatusByAccessId)
+                {
+                    if (detailed.IsOnline)
+                    {
+                        online++;
+                        _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Online;
+                    }
+                    else
+                    {
+                        offline++;
+                        failedDetails.Add($"{entry.Apelido}: {detailed.ErrorDetail}");
+                        _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
+                    }
+                }
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }).ToList();
 
-            if (ok)
-            {
-                online++;
-                _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Online;
-            }
-            else
-            {
-                offline++;
-                _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
-            }
-        }
+        await Task.WhenAll(tasks);
 
         ApplyConnectivityStatusesToCurrentAccesses();
+        var diag = failedDetails.Count > 0
+            ? "\nDiagnóstico: " + string.Join(" | ", failedDetails.Take(8)) + (failedDetails.Count > 8 ? "..." : "")
+            : "";
 
         await new ConfirmDialog(
-            $"Escopo: Todos os clientes\nTotal: {allAccesses.Count}\nOnline: {online}\nOffline: {offline}",
+            $"Escopo: Todos os clientes\nTotal: {allAccesses.Count}\nOnline: {online}\nOffline: {offline}{diag}",
             "Resultado da Conectividade")
             .ShowDialog<bool>(this);
+        _eventLogger.Log("check_connectivity", "access", "all_clients", $"Total={allAccesses.Count}; Online={online}; Offline={offline}");
     }
 
     private (string host, int port) ResolveProbeTarget(AccessEntry entry)
@@ -496,6 +609,17 @@ Versão 1.7.3 - MenuProUI";
             return (parsed.Host, parsed.Port > 0 ? parsed.Port : 443);
 
         return ("", 443);
+    }
+
+    private static int[] ParseFallbackPorts(string csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return new[] { 443, 80, 8443, 8080, 9443 };
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var p) ? p : -1)
+            .Where(p => p is >= 1 and <= 65535)
+            .Distinct()
+            .DefaultIfEmpty(443)
+            .ToArray();
     }
 
     private void ApplyConnectivityStatusesToCurrentAccesses()
@@ -576,6 +700,7 @@ Versão 1.7.3 - MenuProUI";
         VM.SaveAll();
         VM.SelectedClient = created;
         VM.RefreshAccesses();
+        _eventLogger.Log("create", "client", created.Nome, "Cliente criado");
     }
 
     /// <summary>
@@ -612,6 +737,7 @@ Versão 1.7.3 - MenuProUI";
 
         VM.SaveAll();
         VM.Reload();
+        _eventLogger.Log("edit", "client", edited.Nome, "Cliente editado");
     }
 
     /// <summary>
@@ -638,6 +764,7 @@ Versão 1.7.3 - MenuProUI";
 
         VM.SaveAll();
         VM.Reload();
+        _eventLogger.Log("delete", "client", client.Nome, "Cliente removido em cascata");
     }
 
     // ============== HANDLERS DE ACESSOS ==============
@@ -681,6 +808,7 @@ Versão 1.7.3 - MenuProUI";
         VM.SaveAll();
         VM.RefreshAccesses();
         VM.SelectedAccess = created;
+        _eventLogger.Log("create", "access", created.Apelido, $"Tipo={created.Tipo}");
     }
 
     /// <summary>
@@ -706,11 +834,16 @@ Versão 1.7.3 - MenuProUI";
         VM.SelectedAccess.Usuario = edited.Usuario;
         VM.SelectedAccess.Dominio = edited.Dominio;
         VM.SelectedAccess.Url = edited.Url;
+        VM.SelectedAccess.Tags = edited.Tags;
+        VM.SelectedAccess.IsFavorite = edited.IsFavorite;
+        VM.SelectedAccess.OpenCount = edited.OpenCount;
+        VM.SelectedAccess.LastOpenedAt = edited.LastOpenedAt;
         VM.SelectedAccess.Observacoes = edited.Observacoes;
         VM.SelectedAccess.AtualizadoEm = DateTime.UtcNow;
 
         VM.SaveAll();
         VM.RefreshAccesses();
+        _eventLogger.Log("edit", "access", edited.Apelido, $"Tipo={edited.Tipo}");
     }
 
     private async void OnCloneAccess(object? sender, RoutedEventArgs e)
@@ -735,6 +868,10 @@ Versão 1.7.3 - MenuProUI";
             RdpWidth = source.RdpWidth,
             RdpHeight = source.RdpHeight,
             Url = source.Url,
+            Tags = source.Tags,
+            IsFavorite = source.IsFavorite,
+            OpenCount = 0,
+            LastOpenedAt = null,
             Observacoes = source.Observacoes,
             CriadoEm = DateTime.UtcNow,
             AtualizadoEm = DateTime.UtcNow
@@ -754,6 +891,7 @@ Versão 1.7.3 - MenuProUI";
         VM.SaveAll();
         VM.RefreshAccesses();
         VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == created.Id) ?? VM.Accesses.LastOrDefault();
+        _eventLogger.Log("clone", "access", created.Apelido, $"Clonado de={source.Apelido}; Tipo={created.Tipo}");
     }
 
     private string BuildCloneAlias(string alias)
@@ -789,6 +927,7 @@ Versão 1.7.3 - MenuProUI";
         VM.Accesses.Remove(a);
         VM.SaveAll();
         VM.RefreshAccesses();
+        _eventLogger.Log("delete", "access", a.Apelido, $"Tipo={a.Tipo}");
     }
 
     /// <summary>
@@ -805,11 +944,191 @@ Versão 1.7.3 - MenuProUI";
         {
             // Abre/conecta ao acesso usando o serviço de launcher
             AccessLauncher.Open(VM.SelectedAccess);
+            VM.SelectedAccess.OpenCount = Math.Max(0, VM.SelectedAccess.OpenCount) + 1;
+            VM.SelectedAccess.LastOpenedAt = DateTime.UtcNow.ToString("o");
+            VM.SelectedAccess.AtualizadoEm = DateTime.UtcNow;
+            VM.SaveAll();
+            _eventLogger.Log("open", "access", VM.SelectedAccess.Apelido, $"Tipo={VM.SelectedAccess.Tipo}; OpenCount={VM.SelectedAccess.OpenCount}");
         }
         catch (Exception ex)
         {
             // Exibe erro se falhar
             _ = new ConfirmDialog($"Falha ao abrir:\n{ex.Message}", "Erro").ShowDialog<bool>(this);
         }
+    }
+
+    private void ToggleFavoriteSelectedAccess()
+    {
+        if (VM.SelectedAccess is null) return;
+        VM.SelectedAccess.IsFavorite = !VM.SelectedAccess.IsFavorite;
+        VM.SelectedAccess.AtualizadoEm = DateTime.UtcNow;
+        VM.SaveAll();
+        VM.RefreshAccesses();
+        _eventLogger.Log("favorite", "access", VM.SelectedAccess.Apelido, $"IsFavorite={VM.SelectedAccess.IsFavorite}");
+    }
+
+    private async Task OnExportData()
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.StorageProvider is null) return;
+        var folders = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            AllowMultiple = false,
+            SuggestedStartLocation = await top.StorageProvider.TryGetFolderFromPathAsync(AppPaths.ExportDir),
+            Title = "Escolha a pasta para exportar CSVs"
+        });
+        var selected = folders.FirstOrDefault();
+        if (selected is null) return;
+        var targetDir = selected.Path.LocalPath;
+        var exported = _repo.ExportCsvSnapshot(Settings.ExportFormulaProtection);
+        foreach (var file in Directory.GetFiles(exported))
+            File.Copy(file, Path.Combine(targetDir, Path.GetFileName(file)), true);
+        _eventLogger.Log("export", "data", "csv", $"Dir={targetDir}");
+        await new ConfirmDialog($"Exportacao concluida em:\n{targetDir}", "Exportar CSV").ShowDialog<bool>(this);
+    }
+
+    private async void OnExportDataClick(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        await OnExportData();
+    }
+
+    private async Task OnImportData()
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.StorageProvider is null) return;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = true,
+            Title = "Selecione clientes.csv e acessos.csv (eventos.csv opcional)",
+            SuggestedStartLocation = await top.StorageProvider.TryGetFolderFromPathAsync(AppPaths.ImportDir),
+            FileTypeFilter = new List<FilePickerFileType> { new("CSV") { Patterns = new[] { "*.csv" } } }
+        });
+        if (files.Count == 0) return;
+        var byName = files.ToDictionary(f => Path.GetFileName(f.Path.LocalPath).ToLowerInvariant(), f => f.Path.LocalPath);
+        if (!byName.TryGetValue("clientes.csv", out var clientsImport) || !byName.TryGetValue("acessos.csv", out var accessesImport))
+        {
+            await new ConfirmDialog("Selecione ao menos clientes.csv e acessos.csv.", "Importar CSV").ShowDialog<bool>(this);
+            return;
+        }
+        byName.TryGetValue("eventos.csv", out var eventsImport);
+
+        var preview = _repo.ValidateImportPreview(clientsImport, accessesImport);
+        if (preview.hasErrors)
+        {
+            await new HelpDialog(preview.report) { Title = "Falha na previa de importacao" }.ShowDialog<bool>(this);
+            return;
+        }
+
+        var confirm = await new ConfirmDialog(
+            $"{preview.report}\n\nDeseja importar de:\n{AppPaths.ImportDir}?",
+            "Importar CSV").ShowDialog<bool>(this);
+        if (!confirm) return;
+
+        _repo.ImportCsvFiles(clientsImport, accessesImport, !string.IsNullOrWhiteSpace(eventsImport) && File.Exists(eventsImport) ? eventsImport : null);
+        VM.Reload();
+        ApplyConnectivityStatusesToCurrentAccesses();
+        UpdateAuditIntegrityStatus();
+        _eventLogger.Log("import", "data", "csv", $"Dir={AppPaths.ImportDir}");
+        await new ConfirmDialog("Importacao concluida com backup automatico.", "Importar CSV").ShowDialog<bool>(this);
+    }
+
+    private async void OnImportDataClick(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        await OnImportData();
+    }
+
+    private async Task OnShowAuditLog()
+    {
+        UpdateAuditIntegrityStatus();
+        if (!File.Exists(AppPaths.EventsPath))
+        {
+            await new ConfirmDialog("Arquivo eventos.csv ainda nao existe.", "Auditoria").ShowDialog<bool>(this);
+            return;
+        }
+
+        await new AuditLogDialog(AppPaths.EventsPath).ShowDialog<bool>(this);
+    }
+
+    private async Task OnOpenSettings()
+    {
+        var dlg = new SettingsDialog(Settings);
+        var ok = await dlg.ShowDialog<bool>(this);
+        if (!ok) return;
+
+        if (dlg.RequestRestoreLatestBackup)
+        {
+            await OnRestoreLatestBackup();
+            return;
+        }
+
+        _settingsRepo.Save(dlg.Result);
+        _currentSettings = _settingsRepo.Load();
+        _eventLogger.Log("edit", "settings", "connectivity", "Configuracoes atualizadas");
+        await new ConfirmDialog("Configurações salvas.", "Configurações").ShowDialog<bool>(this);
+    }
+
+    private async Task OnRestoreLatestBackup()
+    {
+        var latest = _repo.GetLatestBackupSnapshot();
+        if (string.IsNullOrWhiteSpace(latest))
+        {
+            await new ConfirmDialog("Nenhum backup encontrado.", "Backups").ShowDialog<bool>(this);
+            return;
+        }
+
+        var name = Path.GetFileName(latest);
+        var confirm = await new ConfirmDialog(
+            $"Restaurar backup '{name}'?\n\nIsso vai substituir clientes.csv, acessos.csv e eventos.csv atuais.",
+            "Restaurar Backup").ShowDialog<bool>(this);
+        if (!confirm) return;
+
+        try
+        {
+            _repo.RestoreBackupSnapshot(latest);
+            VM.Reload();
+            ApplyConnectivityStatusesToCurrentAccesses();
+            UpdateAuditIntegrityStatus();
+            _eventLogger.Log("restore_backup", "backup", name, "Backup restaurado via configurações");
+            await new ConfirmDialog($"Backup restaurado: {name}", "Backups").ShowDialog<bool>(this);
+        }
+        catch (Exception ex)
+        {
+            await new ConfirmDialog($"Falha ao restaurar backup:\n{ex.Message}", "Backups").ShowDialog<bool>(this);
+        }
+    }
+
+    private async void OnShowAuditClick(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        await OnShowAuditLog();
+    }
+
+    private async void OnSettingsClick(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        await OnOpenSettings();
+    }
+
+    private void OnToggleFavoriteClick(object? sender, RoutedEventArgs e)
+    {
+        CloseMenus();
+        ToggleFavoriteSelectedAccess();
+    }
+
+    private void UpdateAuditIntegrityStatus()
+    {
+        var text = this.FindControl<TextBlock>("AuditIntegrityText");
+        if (text is null) return;
+
+        var status = EventLogger.VerifyIntegrity();
+        text.Text = status switch
+        {
+            EventLogger.IntegrityStatus.Ok => "Auditoria: OK",
+            EventLogger.IntegrityStatus.Mismatch => "Auditoria: Divergente",
+            EventLogger.IntegrityStatus.Missing => "Auditoria: Ausente",
+            _ => "Auditoria: Erro"
+        };
     }
 }

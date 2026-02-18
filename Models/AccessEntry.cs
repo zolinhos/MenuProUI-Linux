@@ -57,6 +57,18 @@ public class AccessEntry
     /// <summary>Observações adicionais sobre este acesso (opcional)</summary>
     public string? Observacoes { get; set; }
 
+    /// <summary>Tags para facilitar busca e organização.</summary>
+    public string? Tags { get; set; }
+
+    /// <summary>Indica se o acesso está marcado como favorito.</summary>
+    public bool IsFavorite { get; set; } = false;
+
+    /// <summary>Quantidade de vezes que o acesso foi aberto.</summary>
+    public int OpenCount { get; set; } = 0;
+
+    /// <summary>Data/hora da última abertura (UTC, formato ISO).</summary>
+    public string? LastOpenedAt { get; set; }
+
     /// <summary>Data e hora de criação deste acesso (UTC)</summary>
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
     

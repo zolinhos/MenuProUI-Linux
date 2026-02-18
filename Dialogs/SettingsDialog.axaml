@@ -1,0 +1,56 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MenuProUI.Dialogs.SettingsDialog"
+        Width="720" Height="620"
+        WindowStartupLocation="CenterOwner"
+        Title="Configurações"
+        CanResize="False">
+  <Grid RowDefinitions="*,Auto" Margin="16">
+    <ScrollViewer>
+      <StackPanel Spacing="10">
+        <TextBlock Text="Conectividade" FontWeight="Bold" FontSize="16"/>
+
+        <TextBlock Text="Timeout (s)"/>
+        <TextBox Name="TimeoutBox" Watermark="0.5 a 60"/>
+
+        <TextBlock Text="Concorrência máxima"/>
+        <TextBox Name="ConcurrencyBox" Watermark="1 a 128"/>
+
+        <TextBlock Text="Cache TTL (s)"/>
+        <TextBox Name="CacheTtlBox" Watermark="0 a 3600"/>
+
+        <TextBlock Text="Portas fallback URL (CSV)"/>
+        <TextBox Name="FallbackPortsBox" Watermark="443,80,8443,8080,9443"/>
+
+        <CheckBox Name="AutoCheckOnSelectBox" Content="Auto-checar ao selecionar acesso"/>
+
+        <TextBlock Text="Debounce auto-check (ms)"/>
+        <TextBox Name="AutoCheckDebounceBox" Watermark="0 a 10000"/>
+
+        <Border BorderBrush="#333" BorderThickness="0,1,0,0" Margin="0,10,0,4"/>
+        <TextBlock Text="nmap/netcat" FontWeight="Bold" FontSize="14"/>
+        <TextBlock Name="NmapStatusText" Text="nmap: verificando..." Opacity="0.8"/>
+        <TextBlock Name="NcStatusText" Text="nc: verificando..." Opacity="0.8"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Revalidar ferramentas" Click="OnRefreshTools"/>
+          <Button Content="Testar nmap agora" Click="OnTestNmap"/>
+        </StackPanel>
+        <TextBlock Name="NmapTestResultText" Text="" Opacity="0.85" TextWrapping="Wrap"/>
+
+        <Border BorderBrush="#333" BorderThickness="0,1,0,0" Margin="0,10,0,4"/>
+        <TextBlock Text="Exportação" FontWeight="Bold" FontSize="14"/>
+        <CheckBox Name="ExportFormulaProtectionBox" Content="Proteção contra CSV injection"/>
+
+        <Border BorderBrush="#333" BorderThickness="0,1,0,0" Margin="0,10,0,4"/>
+        <TextBlock Text="Backups" FontWeight="Bold" FontSize="14"/>
+        <TextBlock Name="LatestBackupText" Text="Último backup: (nenhum)" Opacity="0.8"/>
+        <Button Content="Restaurar último backup" Click="OnRestoreLatestBackup"/>
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,12,0,0">
+      <Button Content="Cancelar" Click="OnCancel"/>
+      <Button Content="Salvar" Click="OnSave"/>
+    </StackPanel>
+  </Grid>
+</Window>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration;
 using MenuProUI.Models;
@@ -42,6 +43,7 @@ public sealed class CsvRepository
         // Carrega clientes e acessos dos arquivos CSV
         var clients = File.Exists(AppPaths.ClientsPath) ? LoadCsv<Client>(AppPaths.ClientsPath) : new List<Client>();
         var accesses = File.Exists(AppPaths.AccessesPath) ? LoadCsv<AccessEntry>(AppPaths.AccessesPath) : new List<AccessEntry>();
+        EnsureEventsFile();
 
         // Garante sempre ter pelo menos um cliente padrão
         if (clients.Count == 0)
@@ -70,6 +72,121 @@ public sealed class CsvRepository
         }
 
         return (clients, accesses);
+    }
+
+    public string ExportCsvSnapshot(bool formulaProtection = false)
+    {
+        var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var outDir = Path.Combine(AppPaths.ExportDir, $"export_{stamp}");
+        Directory.CreateDirectory(outDir);
+
+        var clientsOut = Path.Combine(outDir, "clientes.csv");
+        var accessesOut = Path.Combine(outDir, "acessos.csv");
+        File.Copy(AppPaths.ClientsPath, clientsOut, true);
+        File.Copy(AppPaths.AccessesPath, accessesOut, true);
+        if (File.Exists(AppPaths.EventsPath))
+        {
+            var eventsOut = Path.Combine(outDir, "eventos.csv");
+            File.Copy(AppPaths.EventsPath, eventsOut, true);
+            if (formulaProtection) ProtectCsvAgainstFormulaInjection(eventsOut);
+        }
+
+        if (formulaProtection)
+        {
+            ProtectCsvAgainstFormulaInjection(clientsOut);
+            ProtectCsvAgainstFormulaInjection(accessesOut);
+        }
+
+        return outDir;
+    }
+
+    public string CreateBackupSnapshot()
+    {
+        var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var backupDir = Path.Combine(AppPaths.BackupsDir, $"backup_{stamp}");
+        Directory.CreateDirectory(backupDir);
+
+        if (File.Exists(AppPaths.ClientsPath))
+            File.Copy(AppPaths.ClientsPath, Path.Combine(backupDir, "clientes.csv"), true);
+        if (File.Exists(AppPaths.AccessesPath))
+            File.Copy(AppPaths.AccessesPath, Path.Combine(backupDir, "acessos.csv"), true);
+        if (File.Exists(AppPaths.EventsPath))
+            File.Copy(AppPaths.EventsPath, Path.Combine(backupDir, "eventos.csv"), true);
+        if (File.Exists(AppPaths.EventsChainPath))
+            File.Copy(AppPaths.EventsChainPath, Path.Combine(backupDir, "eventos.chain"), true);
+
+        return backupDir;
+    }
+
+    public void RestoreBackupSnapshot(string backupDir)
+    {
+        File.Copy(Path.Combine(backupDir, "clientes.csv"), AppPaths.ClientsPath, true);
+        File.Copy(Path.Combine(backupDir, "acessos.csv"), AppPaths.AccessesPath, true);
+
+        var eventsBackup = Path.Combine(backupDir, "eventos.csv");
+        if (File.Exists(eventsBackup))
+            File.Copy(eventsBackup, AppPaths.EventsPath, true);
+    }
+
+    public string? GetLatestBackupSnapshot()
+    {
+        if (!Directory.Exists(AppPaths.BackupsDir)) return null;
+        var latest = Directory.GetDirectories(AppPaths.BackupsDir, "backup_*")
+            .OrderByDescending(x => x, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+        return latest;
+    }
+
+    public (bool hasErrors, string report) ValidateImportPreview(string clientsPath, string accessesPath)
+    {
+        var errors = new List<string>();
+        var warnings = new List<string>();
+
+        ValidateHeader(clientsPath, new[] { "id", "nome" }, errors, "clientes.csv");
+        ValidateHeader(accessesPath, new[] { "id", "clientid", "tipo" }, errors, "acessos.csv");
+
+        if (!errors.Any())
+        {
+            var clientsCount = Math.Max(0, File.ReadLines(clientsPath).Count() - 1);
+            var accessesCount = Math.Max(0, File.ReadLines(accessesPath).Count() - 1);
+            if (clientsCount == 0) warnings.Add("clientes.csv sem registros.");
+            if (accessesCount == 0) warnings.Add("acessos.csv sem registros.");
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("PREVIA DE IMPORTACAO");
+        sb.AppendLine("====================");
+        if (errors.Count > 0)
+        {
+            sb.AppendLine("ERROS:");
+            foreach (var e in errors) sb.AppendLine("- " + e);
+        }
+
+        if (warnings.Count > 0)
+        {
+            sb.AppendLine("AVISOS:");
+            foreach (var w in warnings) sb.AppendLine("- " + w);
+        }
+
+        if (errors.Count == 0) sb.AppendLine("Status: importacao permitida.");
+        return (errors.Count > 0, sb.ToString());
+    }
+
+    public void ImportCsvFiles(string clientsImportPath, string accessesImportPath, string? eventsImportPath = null)
+    {
+        var backupDir = CreateBackupSnapshot();
+        try
+        {
+            File.Copy(clientsImportPath, AppPaths.ClientsPath, true);
+            File.Copy(accessesImportPath, AppPaths.AccessesPath, true);
+            if (!string.IsNullOrWhiteSpace(eventsImportPath) && File.Exists(eventsImportPath))
+                File.Copy(eventsImportPath, AppPaths.EventsPath, true);
+        }
+        catch
+        {
+            RestoreBackupSnapshot(backupDir);
+            throw;
+        }
     }
 
     /// <summary>Salva todos os clientes e acessos no armazenamento CSV</summary>
@@ -123,6 +240,108 @@ public sealed class CsvRepository
         
         // Move arquivo temporário para sobrescrever o original (atômico)
         File.Move(tmp, path, true);
+    }
+
+    private static void EnsureEventsFile()
+    {
+        if (File.Exists(AppPaths.EventsPath)) return;
+        File.WriteAllText(AppPaths.EventsPath, "TimestampUtc,Action,EntityType,EntityName,Details\n");
+    }
+
+    private static void ProtectCsvAgainstFormulaInjection(string path)
+    {
+        if (!File.Exists(path)) return;
+        var lines = File.ReadAllLines(path);
+        if (lines.Length <= 1) return;
+
+        for (var i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            var cells = SplitCsvLine(lines[i]);
+            for (var c = 0; c < cells.Count; c++)
+                cells[c] = ProtectCell(cells[c]);
+            lines[i] = ToCsvLine(cells);
+        }
+
+        File.WriteAllLines(path, lines);
+    }
+
+    private static string ProtectCell(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        var trimmed = value.TrimStart();
+        if (trimmed.Length == 0) return value;
+        var first = trimmed[0];
+        if (first is '=' or '+' or '-' or '@')
+            return "'" + value;
+        return value;
+    }
+
+    private static List<string> SplitCsvLine(string line)
+    {
+        var result = new List<string>();
+        var sb = new StringBuilder();
+        var inQuotes = false;
+
+        for (var i = 0; i < line.Length; i++)
+        {
+            var ch = line[i];
+            if (ch == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    sb.Append('"');
+                    i++;
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (ch == ',' && !inQuotes)
+            {
+                result.Add(sb.ToString());
+                sb.Clear();
+            }
+            else
+            {
+                sb.Append(ch);
+            }
+        }
+
+        result.Add(sb.ToString());
+        return result;
+    }
+
+    private static string ToCsvLine(IEnumerable<string> cells)
+    {
+        return string.Join(",", cells.Select(EscapeCsv));
+    }
+
+    private static string EscapeCsv(string value)
+    {
+        var v = value ?? string.Empty;
+        if (v.Contains('"')) v = v.Replace("\"", "\"\"");
+        return (v.Contains(',') || v.Contains('"') || v.Contains('\n') || v.Contains('\r'))
+            ? $"\"{v}\""
+            : v;
+    }
+
+    private static void ValidateHeader(string path, string[] requiredColumns, List<string> errors, string label)
+    {
+        if (!File.Exists(path))
+        {
+            errors.Add($"{label} nao encontrado.");
+            return;
+        }
+
+        var header = File.ReadLines(path).FirstOrDefault() ?? "";
+        var cols = header.Split(',').Select(x => x.Trim().Trim('"').ToLowerInvariant()).ToHashSet();
+        foreach (var req in requiredColumns)
+        {
+            if (!cols.Contains(req.ToLowerInvariant()))
+                errors.Add($"{label} sem coluna obrigatoria: {req}.");
+        }
     }
 
     // ==================== MIGRAÇÃO DE DADOS ====================

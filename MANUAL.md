@@ -26,7 +26,7 @@ chmod +x build-deb.sh
 3. Instale o pacote gerado:
 
 ```bash
-sudo dpkg -i menupro-ui_1.7.3_amd64.deb
+sudo dpkg -i menupro-ui_1.9.0_amd64.deb
 sudo apt-get install -f   # para resolver dependências, se necessário
 ```
 
@@ -57,6 +57,9 @@ A aplicação armazena os dados do usuário em um diretório de configuração (
 - Arquivos:
   - `clientes.csv` — lista de clientes.
   - `acessos.csv` — lista de acessos vinculados a clientes.
+  - `eventos.csv` — trilha de auditoria das ações no app.
+  - `eventos.chain` — hash encadeado para verificação de integridade da auditoria.
+  - `settings.json` — configurações de conectividade, auto-check, debounce e exportação.
   - `acessos_legacy.csv` — legado (padrão antigo); o app tenta migrar automaticamente quando detectado.
 
 Para fazer backup rápido:
@@ -92,6 +95,10 @@ Os modelos de dados estão em `Models/Client.cs` e `Models/AccessEntry.cs`.
   - `RdpWidth` / `RdpHeight` (int?, resolução fixa)
   - `Url` (string, opcional)
   - `Observacoes` (string)
+  - `Tags` (string)
+  - `IsFavorite` (bool)
+  - `OpenCount` (int)
+  - `LastOpenedAt` (string)
   - `CriadoEm` / `AtualizadoEm` (DateTime)
 
 O `CsvRepository` usa `CsvHelper` com cabeçalho (`HasHeaderRecord = true`). Ao editar CSVs manualmente, mantenha o cabeçalho e a ordem/nomes das propriedades.
@@ -111,12 +118,33 @@ Uso básico (GUI)
 Conectividade (alinhamento com versão Mac)
 ------------------------------------------
 
-- A checagem é manual (sem auto-refresh), com timeout curto por acesso.
+- A checagem pode ser manual (escopo cliente/todos) e também automática por seleção (opcional nas Configurações).
 - Portas padrão usadas na validação quando ausentes:
   - SSH: `22`
   - RDP: `3389`
-  - URL: `443`
-- O resultado é exibido em resumo por escopo (cliente atual ou todos os clientes).
+  - URL: `80` (http), `443` (https), `21` (ftp), fallback `443` para demais esquemas
+- Para URL, após falha na porta principal, o app tenta portas fallback configuráveis (CSV em Configurações).
+- Se disponíveis no sistema, os probes usam fallback por `nmap` e `nc`.
+- O resultado exibe diagnóstico resumido (DNS, timeout, conexão recusada, host indisponível).
+- O diálogo de acesso possui teste inline de URL.
+
+Auditoria e integridade
+-----------------------
+
+- O app grava eventos em `eventos.csv` e mantém hash encadeado em `eventos.chain`.
+- A barra superior da tela principal mostra status de integridade:
+  - `Auditoria: OK`
+  - `Auditoria: Divergente`
+  - `Auditoria: Ausente`
+  - `Auditoria: Erro`
+- O status é atualizado no carregamento, reload, importação, restauração e abertura da auditoria.
+
+Restauração de backup pela interface
+------------------------------------
+
+- Em `Configurações`, seção `Backups`, existe ação `Restaurar último backup`.
+- O restore repõe `clientes.csv`, `acessos.csv` e `eventos.csv` do snapshot mais recente em `backups/backup_*`.
+- Após restaurar, a aplicação recarrega os dados automaticamente.
 
 Comportamento de migração
 -------------------------
@@ -143,7 +171,7 @@ Instalar e remover o pacote
 Instalar:
 
 ```bash
-sudo dpkg -i menupro-ui_1.7.3_amd64.deb
+sudo dpkg -i menupro-ui_1.9.0_amd64.deb
 sudo apt-get install -f
 ```
 

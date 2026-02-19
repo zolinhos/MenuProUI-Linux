@@ -13,7 +13,7 @@
 
     <!-- Top bar with dropdown menus -->
     <Border Grid.ColumnSpan="2" CornerRadius="10" Padding="12" BorderBrush="#333" BorderThickness="1">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="15">
+      <Grid ColumnDefinitions="Auto,Auto,260,*,Auto,Auto,Auto,Auto" ColumnSpacing="15">
         
         <!-- Menu Clientes -->
         <StackPanel Orientation="Horizontal" Spacing="5">
@@ -43,8 +43,15 @@
           <TextBlock VerticalAlignment="Center" Text="Acessos" FontWeight="Bold"/>
         </StackPanel>
 
+        <!-- Busca global -->
+        <TextBox Grid.Column="2"
+                 Name="GlobalSearchBox"
+                 Watermark="🔎 Busca global..."
+                 Text="{Binding GlobalSearchText}"
+                 Padding="10,8" CornerRadius="6" BorderBrush="#333"/>
+
         <!-- Audit integrity status -->
-        <TextBlock Grid.Column="2"
+        <TextBlock Grid.Column="3"
                    Name="AuditIntegrityText"
                    Text="Auditoria: verificando..."
                    Opacity="0.85"
@@ -52,10 +59,10 @@
                    HorizontalAlignment="Right"/>
 
         <!-- Quick actions -->
-        <Button Grid.Column="3" Content="Abrir" Click="OnOpenAccess" ToolTip.Tip="Abrir acesso selecionado (Enter)"/>
-        <Button Grid.Column="4" Content="Checar Conectividade" Click="OnCheckConnectivity" ToolTip.Tip="Checar conectividade dos acessos do cliente selecionado (Ctrl+Shift+K)"/>
-        <Button Grid.Column="5" Content="Recarregar" Click="OnReload" ToolTip.Tip="Recarregar dados"/>
-        <Button Grid.Column="6" Content="Configurações" Click="OnSettingsClick" ToolTip.Tip="Abrir configurações (Ctrl+Shift+S)"/>
+        <Button Grid.Column="4" Content="Abrir" Click="OnOpenAccess" ToolTip.Tip="Abrir acesso selecionado (Enter)"/>
+        <Button Grid.Column="5" Content="Checar Conectividade" Click="OnCheckConnectivity" ToolTip.Tip="Checar conectividade dos acessos do cliente selecionado (Ctrl+Shift+K)"/>
+        <Button Grid.Column="6" Content="Recarregar" Click="OnReload" ToolTip.Tip="Recarregar dados"/>
+        <Button Grid.Column="7" Content="Configurações" Click="OnSettingsClick" ToolTip.Tip="Abrir configurações (Ctrl+Shift+S)"/>
       </Grid>
     </Border>
 

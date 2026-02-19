@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MenuProUI.Models;
@@ -27,6 +28,9 @@ public partial class MainWindowViewModel : ObservableObject
     
     /// <summary>Coleção de acessos filtrados pela busca (exibidos na UI)</summary>
     public ObservableCollection<AccessEntry> AccessesFiltered { get; } = new();
+    
+    /// <summary>Cache com todos os acessos carregados (todos os clientes)</summary>
+    private System.Collections.Generic.List<AccessEntry> _allAccesses = new();
 
     /// <summary>Array com todos os tipos de acesso disponíveis (SSH, RDP, URL)</summary>
     public AccessType[] Tipos { get; } = Enum.GetValues<AccessType>();
@@ -42,6 +46,9 @@ public partial class MainWindowViewModel : ObservableObject
     
     /// <summary>Texto de busca para filtrar acessos em tempo real</summary>
     [ObservableProperty] private string _accessesSearchText = "";
+
+    /// <summary>Busca global unificada (clientes e acessos)</summary>
+    [ObservableProperty] private string _globalSearchText = "";
 
     /// <summary>Caminho do arquivo CSV de clientes</summary>
     public string ClientsPath => AppPaths.ClientsPath;
@@ -101,6 +108,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         // Carrega dados do repositório
         var (clients, accesses) = _repo.Load();
+        _allAccesses = accesses;
 
         // Popula coleção de clientes (ordenados por nome)
         foreach (var c in clients.OrderBy(c => c.Nome))
@@ -124,6 +132,7 @@ public partial class MainWindowViewModel : ObservableObject
         // Recarrega acessos se não fornecidos (para sincronizar com disco)
         var (_, loadedAccesses) = _repo.Load();
         var source = all ?? loadedAccesses;
+        _allAccesses = source;
 
         Accesses.Clear();
 
@@ -213,10 +222,12 @@ public partial class MainWindowViewModel : ObservableObject
     {
         ClientsFiltered.Clear();
 
-        var search = (ClientsSearchText ?? "").Trim().ToLower();
+        var search = (ClientsSearchText ?? "").Trim();
+        var global = (GlobalSearchText ?? "").Trim();
+        var effective = string.IsNullOrWhiteSpace(global) ? search : global;
 
         // Se busca vazia, exibe todos os clientes
-        if (string.IsNullOrWhiteSpace(search))
+        if (string.IsNullOrWhiteSpace(effective))
         {
             foreach (var c in Clients)
                 ClientsFiltered.Add(c);
@@ -224,9 +235,9 @@ public partial class MainWindowViewModel : ObservableObject
         else
         {
             // Filtra por nome ou observações
-            foreach (var c in Clients.Where(c => 
-                c.Nome.ToLower().Contains(search) ||
-                (c.Observacoes ?? "").ToLower().Contains(search)))
+            foreach (var c in Clients.Where(c =>
+                ContainsIgnoreCase(c.Nome, effective) ||
+                ContainsIgnoreCase(c.Observacoes, effective)))
                 ClientsFiltered.Add(c);
         }
     }
@@ -239,24 +250,28 @@ public partial class MainWindowViewModel : ObservableObject
     {
         AccessesFiltered.Clear();
 
-        var search = (AccessesSearchText ?? "").Trim().ToLower();
+        var search = (AccessesSearchText ?? "").Trim();
+        var global = (GlobalSearchText ?? "").Trim();
+        var hasGlobal = !string.IsNullOrWhiteSpace(global);
+        var effective = hasGlobal ? global : search;
+        IEnumerable<AccessEntry> source = hasGlobal ? _allAccesses : Accesses;
 
         // Se busca vazia, exibe todos os acessos
-        if (string.IsNullOrWhiteSpace(search))
+        if (string.IsNullOrWhiteSpace(effective))
         {
-            foreach (var a in Accesses)
+            foreach (var a in source)
                 AccessesFiltered.Add(a);
         }
         else
         {
             // Filtra por múltiplos campos
-            foreach (var a in Accesses.Where(x =>
-                x.Apelido.ToLower().Contains(search) ||
-                (x.Host ?? "").ToLower().Contains(search) ||
-                (x.Usuario ?? "").ToLower().Contains(search) ||
-                (x.Url ?? "").ToLower().Contains(search) ||
-                (x.Dominio ?? "").ToLower().Contains(search) ||
-                (x.Tags ?? "").ToLower().Contains(search)))
+            foreach (var a in source.Where(x =>
+                ContainsIgnoreCase(x.Apelido, effective) ||
+                ContainsIgnoreCase(x.Host, effective) ||
+                ContainsIgnoreCase(x.Usuario, effective) ||
+                ContainsIgnoreCase(x.Url, effective) ||
+                ContainsIgnoreCase(x.Dominio, effective) ||
+                ContainsIgnoreCase(x.Tags, effective)))
                 AccessesFiltered.Add(a);
         }
         
@@ -276,5 +291,19 @@ public partial class MainWindowViewModel : ObservableObject
         ApplyAccessesFilter();
         // Notifica que AccessesCountDisplay mudou
         OnPropertyChanged(nameof(AccessesCountDisplay));
+    }
+
+    /// <summary>Evento disparado quando GlobalSearchText muda - aplica filtro unificado automaticamente</summary>
+    partial void OnGlobalSearchTextChanged(string value)
+    {
+        ApplyClientFilter();
+        ApplyAccessesFilter();
+        OnPropertyChanged(nameof(AccessesCountDisplay));
+    }
+
+    private static bool ContainsIgnoreCase(string? value, string term)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               value.Contains(term, StringComparison.OrdinalIgnoreCase);
     }
 }

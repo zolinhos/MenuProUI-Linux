@@ -129,6 +129,19 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // Ctrl+K - Focar Busca Global
+            if (hasCtrl && !hasShift && e.Key == Key.K)
+            {
+                e.Handled = true;
+                var globalSearchBox = this.FindControl<TextBox>("GlobalSearchBox");
+                if (globalSearchBox != null)
+                {
+                    globalSearchBox.Focus();
+                    globalSearchBox.SelectAll();
+                }
+                return;
+            }
+
             // Ctrl+Shift+F - Focar Busca Acessos
             if (hasCtrl && hasShift && e.Key == Key.F)
             {
@@ -146,6 +159,7 @@ public partial class MainWindow : Window
             if (hasCtrl && e.Key == Key.L)
             {
                 e.Handled = true;
+                VM.GlobalSearchText = "";
                 VM.ClientsSearchText = "";
                 VM.AccessesSearchText = "";
                 return;

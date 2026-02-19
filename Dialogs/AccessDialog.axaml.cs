@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -9,15 +10,17 @@ namespace MenuProUI.Dialogs;
 
 public partial class AccessDialog : Window
 {
+    private readonly List<Client> _availableClients;
     public AccessEntry Result { get; private set; }
 
-    public AccessDialog() : this(new AccessEntry())
+    public AccessDialog() : this(new AccessEntry(), null)
     {
     }
 
-    public AccessDialog(AccessEntry initial)
+    public AccessDialog(AccessEntry initial, IEnumerable<Client>? clients)
     {
         InitializeComponent();
+        _availableClients = (clients ?? Enumerable.Empty<Client>()).ToList();
 
         Result = new AccessEntry
         {
@@ -43,6 +46,11 @@ public partial class AccessDialog : Window
             CriadoEm = initial.CriadoEm,
             AtualizadoEm = initial.AtualizadoEm
         };
+
+        ClientBox.ItemsSource = _availableClients;
+        var selectedClient = _availableClients.FirstOrDefault(c => c.Id == Result.ClientId) ?? _availableClients.FirstOrDefault();
+        ClientBox.SelectedItem = selectedClient;
+        ClientBox.IsEnabled = _availableClients.Count > 0;
 
         TypeBox.ItemsSource = Enum.GetValues<AccessType>();
         TypeBox.SelectedItem = Result.Tipo;
@@ -98,6 +106,8 @@ public partial class AccessDialog : Window
         Result.Tags = (TagsBox.Text ?? "").Trim();
         Result.Observacoes = NotesBox.Text;
         Result.IsFavorite = FavoriteBox.IsChecked == true;
+        if (ClientBox.SelectedItem is Client selectedClient)
+            Result.ClientId = selectedClient.Id;
 
         if (tipo == AccessType.URL)
         {

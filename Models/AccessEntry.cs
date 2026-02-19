@@ -83,9 +83,19 @@ public class AccessEntry
     [Ignore]
     public string ConnectivityBadge => ConnectivityState switch
     {
-        ConnectivityState.Online => "🟢",
-        ConnectivityState.Offline => "🔴",
-        ConnectivityState.Checking => "🟡",
-        _ => "⚪"
+        ConnectivityState.Online => "●",
+        ConnectivityState.Offline => "●",
+        ConnectivityState.Checking => "●",
+        _ => "●"
+    };
+
+    /// <summary>Cor fixa do badge para não depender de tema.</summary>
+    [Ignore]
+    public string ConnectivityBadgeColor => ConnectivityState switch
+    {
+        ConnectivityState.Online => "#16A34A",  // verde
+        ConnectivityState.Offline => "#DC2626", // vermelho
+        ConnectivityState.Checking => "#CA8A04", // amarelo
+        _ => "#6B7280" // cinza
     };
 }

@@ -128,7 +128,12 @@
             <DataTemplate>
               <Border Padding="6" CornerRadius="8">
                 <Grid ColumnDefinitions="32,*">
-                  <TextBlock Grid.Column="0" Text="{Binding ConnectivityBadge}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="0"
+                             Text="{Binding ConnectivityBadge}"
+                             Foreground="{Binding ConnectivityBadgeColor}"
+                             FontSize="16"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"/>
                   <TextBlock Grid.Column="1" Text="{Binding Nome}" TextTrimming="CharacterEllipsis"/>
                 </Grid>
               </Border>
@@ -194,7 +199,12 @@
             <DataTemplate>
               <Border Padding="8" CornerRadius="8">
                 <Grid ColumnDefinitions="46,40,90,*,200,70,140,160">
-                  <TextBlock Grid.Column="0" Text="{Binding ConnectivityBadge}" HorizontalAlignment="Center" Opacity="0.95"/>
+                  <TextBlock Grid.Column="0"
+                             Text="{Binding ConnectivityBadge}"
+                             Foreground="{Binding ConnectivityBadgeColor}"
+                             FontSize="16"
+                             HorizontalAlignment="Center"
+                             Opacity="0.95"/>
                   <TextBlock Grid.Column="1" Text="{Binding IsFavorite}" HorizontalAlignment="Center" Opacity="0.95"/>
                   <TextBlock Grid.Column="2" Text="{Binding Tipo}" Opacity="0.9"/>
                   <TextBlock Grid.Column="3" Text="{Binding Apelido}" TextTrimming="CharacterEllipsis"/>

@@ -827,20 +827,21 @@ Versão 1.8.0 - MenuProUI";
             AtualizadoEm = DateTime.UtcNow
         };
 
-        var dlg = new AccessDialog(a);
+        var dlg = new AccessDialog(a, VM.Clients);
         var ok = await dlg.ShowDialog<bool>(this);
         if (!ok) return;
 
         var created = dlg.Result;
         created.Id = Guid.NewGuid();
-        created.ClientId = VM.SelectedClient.Id;
         created.CriadoEm = DateTime.UtcNow;
         created.AtualizadoEm = DateTime.UtcNow;
+        var createdId = created.Id;
+        var targetClientId = created.ClientId;
 
         VM.Accesses.Add(created);
         VM.SaveAll();
-        VM.RefreshAccesses();
-        VM.SelectedAccess = created;
+        SelectClientAndRefresh(targetClientId);
+        VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == createdId) ?? VM.SelectedAccess;
         _eventLogger.Log("create", "access", created.Apelido, $"Tipo={created.Tipo}");
     }
 
@@ -853,14 +854,17 @@ Versão 1.8.0 - MenuProUI";
         CloseMenus();
         if (VM.SelectedAccess is null) return;
 
-        var dlg = new AccessDialog(VM.SelectedAccess);
+        var dlg = new AccessDialog(VM.SelectedAccess, VM.Clients);
         var ok = await dlg.ShowDialog<bool>(this);
         if (!ok) return;
 
         var edited = dlg.Result;
+        var editedId = VM.SelectedAccess.Id;
+        var targetClientId = edited.ClientId;
 
         // Atualiza todos os campos do acesso
         VM.SelectedAccess.Tipo = edited.Tipo;
+        VM.SelectedAccess.ClientId = edited.ClientId;
         VM.SelectedAccess.Apelido = edited.Apelido;
         VM.SelectedAccess.Host = edited.Host;
         VM.SelectedAccess.Porta = edited.Porta;
@@ -875,7 +879,8 @@ Versão 1.8.0 - MenuProUI";
         VM.SelectedAccess.AtualizadoEm = DateTime.UtcNow;
 
         VM.SaveAll();
-        VM.RefreshAccesses();
+        SelectClientAndRefresh(targetClientId);
+        VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == editedId) ?? VM.SelectedAccess;
         _eventLogger.Log("edit", "access", edited.Apelido, $"Tipo={edited.Tipo}");
     }
 
@@ -910,20 +915,21 @@ Versão 1.8.0 - MenuProUI";
             AtualizadoEm = DateTime.UtcNow
         };
 
-        var dlg = new AccessDialog(clone);
+        var dlg = new AccessDialog(clone, VM.Clients);
         var ok = await dlg.ShowDialog<bool>(this);
         if (!ok) return;
 
         var created = dlg.Result;
         created.Id = Guid.NewGuid();
-        created.ClientId = source.ClientId;
         created.CriadoEm = DateTime.UtcNow;
         created.AtualizadoEm = DateTime.UtcNow;
+        var createdId = created.Id;
+        var targetClientId = created.ClientId;
 
         VM.Accesses.Add(created);
         VM.SaveAll();
-        VM.RefreshAccesses();
-        VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == created.Id) ?? VM.Accesses.LastOrDefault();
+        SelectClientAndRefresh(targetClientId);
+        VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == createdId) ?? VM.Accesses.LastOrDefault();
         _eventLogger.Log("clone", "access", created.Apelido, $"Clonado de={source.Apelido}; Tipo={created.Tipo}");
     }
 
@@ -993,11 +999,30 @@ Versão 1.8.0 - MenuProUI";
     private void ToggleFavoriteSelectedAccess()
     {
         if (VM.SelectedAccess is null) return;
-        VM.SelectedAccess.IsFavorite = !VM.SelectedAccess.IsFavorite;
+        var selectedId = VM.SelectedAccess.Id;
+        var alias = VM.SelectedAccess.Apelido;
+        var clientId = VM.SelectedAccess.ClientId;
+        var toggled = !VM.SelectedAccess.IsFavorite;
+
+        VM.SelectedAccess.IsFavorite = toggled;
         VM.SelectedAccess.AtualizadoEm = DateTime.UtcNow;
         VM.SaveAll();
-        VM.RefreshAccesses();
-        _eventLogger.Log("favorite", "access", VM.SelectedAccess.Apelido, $"IsFavorite={VM.SelectedAccess.IsFavorite}");
+        SelectClientAndRefresh(clientId);
+        VM.SelectedAccess = VM.Accesses.FirstOrDefault(a => a.Id == selectedId) ?? VM.SelectedAccess;
+        _eventLogger.Log("favorite", "access", alias, $"IsFavorite={toggled}");
+    }
+
+    private void SelectClientAndRefresh(Guid clientId)
+    {
+        var targetClient = VM.Clients.FirstOrDefault(c => c.Id == clientId);
+        if (targetClient is null)
+        {
+            VM.RefreshAccesses();
+            return;
+        }
+
+        VM.SetSelectedClient(targetClient);
+        ApplyConnectivityStatusesToCurrentAccesses(refreshClientList: false);
     }
 
     private async Task OnExportData()

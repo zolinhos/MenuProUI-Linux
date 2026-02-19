@@ -26,7 +26,7 @@ chmod +x build-deb.sh
 3. Instale o pacote gerado:
 
 ```bash
-sudo dpkg -i menupro-ui_1.9.1_amd64.deb
+sudo dpkg -i menupro-ui_1.9.2_amd64.deb
 sudo apt-get install -f   # para resolver dependências, se necessário
 ```
 
@@ -171,7 +171,7 @@ Instalar e remover o pacote
 Instalar:
 
 ```bash
-sudo dpkg -i menupro-ui_1.9.1_amd64.deb
+sudo dpkg -i menupro-ui_1.9.2_amd64.deb
 sudo apt-get install -f
 ```
 

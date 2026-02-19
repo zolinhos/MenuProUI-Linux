@@ -11,14 +11,14 @@
 ## 2) Build e artefatos
 - [x] Build release: `dotnet build`
 - [x] Publish linux-x64: `dotnet publish MenuProUI.csproj -c Release -r linux-x64 --self-contained true -o publish/linux-x64`
-- [ ] `.deb` gerado: `menupro-ui_1.9.1_amd64.deb`
+- [ ] `.deb` gerado: `menupro-ui_1.9.2_amd64.deb`
 
 ## 3) Publicação no GitHub
-- [ ] Criar tag `v1.9.1`
-- [ ] Criar release "MenuProUI-Linux 1.9.1"
+- [ ] Criar tag `v1.9.2`
+- [ ] Criar release "MenuProUI-Linux 1.9.2"
 - [ ] Anexar `.deb`
 - [ ] Incluir changelog curto (conectividade, clonagem, alinhamentos)
 
 ## 4) Script de automação
 - [ ] Copiar ambiente: `cp .env.release.example .env.release`
-- [ ] Rodar script: `bash scripts/release_publish_linux.sh 1.9.1`
+- [ ] Rodar script: `bash scripts/release_publish_linux.sh 1.9.2`

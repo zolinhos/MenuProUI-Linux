@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using CsvHelper.Configuration.Attributes;
 
 namespace MenuProUI.Models;
@@ -7,8 +9,9 @@ namespace MenuProUI.Models;
 /// Representa um cliente (organização, projeto ou agregador de acessos).
 /// Um cliente pode ter múltiplos acessos (SSH, RDP, URLs) associados.
 /// </summary>
-public class Client
+public class Client : INotifyPropertyChanged
 {
+    private ConnectivityState _connectivityState = ConnectivityState.Unknown;
     /// <summary>Identificador único do cliente (GUID)</summary>
     public Guid Id { get; set; } = Guid.NewGuid();
     
@@ -26,7 +29,18 @@ public class Client
 
     /// <summary>Status de conectividade agregado do cliente (não persistido em CSV).</summary>
     [Ignore]
-    public ConnectivityState ConnectivityState { get; set; } = ConnectivityState.Unknown;
+    public ConnectivityState ConnectivityState
+    {
+        get => _connectivityState;
+        set
+        {
+            if (_connectivityState == value) return;
+            _connectivityState = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ConnectivityBadge));
+            OnPropertyChanged(nameof(ConnectivityBadgeColor));
+        }
+    }
 
     /// <summary>Badge visual simples para exibição do status agregado.</summary>
     [Ignore]
@@ -50,4 +64,9 @@ public class Client
 
     /// <summary>Retorna o nome do cliente como representação em string</summary>
     public override string ToString() => Nome;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

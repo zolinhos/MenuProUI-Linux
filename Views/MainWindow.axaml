@@ -174,7 +174,10 @@
                   SelectionChanged="OnAccessSelectionChanged"
                   DoubleTapped="OnOpenAccess"
                   AutoGenerateColumns="False"
+                  ColumnWidth="150"
+                  MinColumnWidth="70"
                   CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
                   GridLinesVisibility="All"
                   HeadersVisibility="Column"
                   IsReadOnly="True">
@@ -189,7 +192,7 @@
           </DataGrid.ContextMenu>
 
           <DataGrid.Columns>
-            <DataGridTemplateColumn Header="Net" Width="70" MinWidth="60">
+            <DataGridTemplateColumn Header="Net" Width="70" MinWidth="60" CanUserResize="True">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate>
                   <TextBlock Text="{Binding ConnectivityBadge}"
@@ -199,13 +202,13 @@
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
-            <DataGridTextColumn Header="Fav" Binding="{Binding FavoriteBadge}" Width="70" MinWidth="60"/>
-            <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="110" MinWidth="90"/>
-            <DataGridTextColumn Header="Apelido" Binding="{Binding ApelidoDisplay}" Width="2*" MinWidth="160"/>
-            <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="2*" MinWidth="140"/>
-            <DataGridTextColumn Header="Porta" Binding="{Binding Porta}" Width="90" MinWidth="80"/>
-            <DataGridTextColumn Header="Usuário" Binding="{Binding Usuario}" Width="180" MinWidth="120"/>
-            <DataGridTextColumn Header="URL" Binding="{Binding Url}" Width="2*" MinWidth="200"/>
+            <DataGridTextColumn Header="Fav" Binding="{Binding FavoriteBadge}" Width="70" MinWidth="60" CanUserResize="True"/>
+            <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="120" MinWidth="90" CanUserResize="True"/>
+            <DataGridTextColumn Header="Apelido" Binding="{Binding ApelidoDisplay}" Width="220" MinWidth="140" CanUserResize="True"/>
+            <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="220" MinWidth="140" CanUserResize="True"/>
+            <DataGridTextColumn Header="Porta" Binding="{Binding Porta}" Width="90" MinWidth="80" CanUserResize="True"/>
+            <DataGridTextColumn Header="Usuário" Binding="{Binding Usuario}" Width="180" MinWidth="120" CanUserResize="True"/>
+            <DataGridTextColumn Header="URL" Binding="{Binding Url}" Width="260" MinWidth="180" CanUserResize="True"/>
           </DataGrid.Columns>
         </DataGrid>
 

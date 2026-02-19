@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using CsvHelper.Configuration.Attributes;
 
 namespace MenuProUI.Models;
@@ -7,8 +9,9 @@ namespace MenuProUI.Models;
 /// Representa um acesso individual (SSH, RDP ou URL) associado a um cliente.
 /// Contém todas as configurações necessárias para conectar ou abrir um recurso.
 /// </summary>
-public class AccessEntry
+public class AccessEntry : INotifyPropertyChanged
 {
+    private ConnectivityState _connectivityState = ConnectivityState.Unknown;
     /// <summary>Identificador único do acesso (GUID)</summary>
     public Guid Id { get; set; } = Guid.NewGuid();
     
@@ -94,7 +97,18 @@ public class AccessEntry
 
     /// <summary>Status de conectividade em memória (não persistido em CSV).</summary>
     [Ignore]
-    public ConnectivityState ConnectivityState { get; set; } = ConnectivityState.Unknown;
+    public ConnectivityState ConnectivityState
+    {
+        get => _connectivityState;
+        set
+        {
+            if (_connectivityState == value) return;
+            _connectivityState = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ConnectivityBadge));
+            OnPropertyChanged(nameof(ConnectivityBadgeColor));
+        }
+    }
 
     /// <summary>Badge visual simples para exibição do status de conectividade.</summary>
     [Ignore]
@@ -115,4 +129,9 @@ public class AccessEntry
         ConnectivityState.Checking => "#CA8A04", // amarelo
         _ => "#6B7280" // cinza
     };
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

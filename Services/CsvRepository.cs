@@ -16,6 +16,45 @@ namespace MenuProUI.Services;
 /// </summary>
 public sealed class CsvRepository
 {
+    private sealed class ClientMap : ClassMap<Client>
+    {
+        public ClientMap()
+        {
+            Map(x => x.Id).Name("Id");
+            Map(x => x.Nome).Name("Nome");
+            Map(x => x.Observacoes).Name("Observacoes");
+            Map(x => x.CriadoEm).Name("CriadoEm");
+            Map(x => x.AtualizadoEm).Name("AtualizadoEm");
+        }
+    }
+
+    private sealed class AccessEntryMap : ClassMap<AccessEntry>
+    {
+        public AccessEntryMap()
+        {
+            Map(x => x.Id).Name("Id");
+            Map(x => x.ClientId).Name("ClientId");
+            Map(x => x.Tipo).Name("Tipo");
+            Map(x => x.Apelido).Name("Apelido");
+            Map(x => x.Host).Name("Host");
+            Map(x => x.Porta).Name("Porta");
+            Map(x => x.Usuario).Name("Usuario");
+            Map(x => x.Dominio).Name("Dominio");
+            Map(x => x.RdpIgnoreCert).Name("RdpIgnoreCert");
+            Map(x => x.RdpFullScreen).Name("RdpFullScreen");
+            Map(x => x.RdpDynamicResolution).Name("RdpDynamicResolution");
+            Map(x => x.RdpWidth).Name("RdpWidth");
+            Map(x => x.RdpHeight).Name("RdpHeight");
+            Map(x => x.Url).Name("Url");
+            Map(x => x.Observacoes).Name("Observacoes");
+            Map(x => x.IsFavorite).Name("IsFavorite");
+            Map(x => x.OpenCount).Name("OpenCount");
+            Map(x => x.LastOpenedAt).Name("LastOpenedAt");
+            Map(x => x.CriadoEm).Name("CriadoEm");
+            Map(x => x.AtualizadoEm).Name("AtualizadoEm");
+        }
+    }
+
     /// <summary>Configuração do CsvHelper para leitura/escrita consistente</summary>
     private static CsvConfiguration Cfg => new(CultureInfo.InvariantCulture)
     {
@@ -218,6 +257,8 @@ public sealed class CsvRepository
     {
         using var reader = new StreamReader(path);
         using var csv = new CsvReader(reader, Cfg);
+        csv.Context.RegisterClassMap<ClientMap>();
+        csv.Context.RegisterClassMap<AccessEntryMap>();
         return csv.GetRecords<T>().ToList();
     }
 
@@ -235,6 +276,8 @@ public sealed class CsvRepository
         using (var writer = new StreamWriter(tmp))
         using (var csv = new CsvWriter(writer, Cfg))
         {
+            csv.Context.RegisterClassMap<ClientMap>();
+            csv.Context.RegisterClassMap<AccessEntryMap>();
             csv.WriteRecords(records);
         }
         

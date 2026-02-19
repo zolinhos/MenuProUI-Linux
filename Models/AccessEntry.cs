@@ -21,6 +21,19 @@ public class AccessEntry
     /// <summary>Nome/apelido do acesso para identificação rápida (ex: "Servidor Web Prod")</summary>
     public string Apelido { get; set; } = "Novo Acesso";
 
+    /// <summary>Nome exibido na UI com fallback para host/url quando apelido estiver vazio.</summary>
+    [Ignore]
+    public string ApelidoDisplay
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Apelido)) return Apelido;
+            if (!string.IsNullOrWhiteSpace(Host)) return Host!;
+            if (!string.IsNullOrWhiteSpace(Url)) return Url!;
+            return "Acesso";
+        }
+    }
+
     // ============ CAMPOS COMUNS SSH/RDP ============
     /// <summary>Nome do host ou IP do servidor (ex: "192.168.1.100" ou "server.example.com")</summary>
     public string? Host { get; set; }
@@ -62,6 +75,10 @@ public class AccessEntry
 
     /// <summary>Indica se o acesso está marcado como favorito.</summary>
     public bool IsFavorite { get; set; } = false;
+
+    /// <summary>Badge textual de favorito para exibição na grade.</summary>
+    [Ignore]
+    public string FavoriteBadge => IsFavorite ? "★" : "·";
 
     /// <summary>Quantidade de vezes que o acesso foi aberto.</summary>
     public int OpenCount { get; set; } = 0;

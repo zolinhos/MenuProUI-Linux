@@ -151,7 +151,7 @@
 
     <!-- Accesses -->
     <Border Grid.Row="1" Grid.Column="1" CornerRadius="10" Padding="12" BorderBrush="#333" BorderThickness="1">
-      <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
 
         <!-- Header with counter -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
@@ -166,26 +166,19 @@
                  Text="{Binding AccessesSearchText}"
                  Padding="10,8" CornerRadius="6" BorderBrush="#333"/>
 
-        <!-- Header columns -->
-        <Grid Grid.Row="2" ColumnDefinitions="46,40,90,*,200,70,140,160" Opacity="0.85">
-          <TextBlock Grid.Column="0" Text="Net" FontWeight="Bold"/>
-          <TextBlock Grid.Column="1" Text="Fav" FontWeight="Bold"/>
-          <TextBlock Grid.Column="2" Text="Tipo" FontWeight="Bold"/>
-          <TextBlock Grid.Column="3" Text="Apelido" FontWeight="Bold"/>
-          <TextBlock Grid.Column="4" Text="Host" FontWeight="Bold"/>
-          <TextBlock Grid.Column="5" Text="Porta" FontWeight="Bold"/>
-          <TextBlock Grid.Column="6" Text="Usuário" FontWeight="Bold"/>
-          <TextBlock Grid.Column="7" Text="URL" FontWeight="Bold"/>
-        </Grid>
-
-        <!-- Accesses list filtered -->
-        <ListBox Grid.Row="3"
-                 Name="AccessList"
-                 ItemsSource="{Binding AccessesFiltered}"
-                 SelectedItem="{Binding SelectedAccess}"
-                 SelectionChanged="OnAccessSelectionChanged"
-                 DoubleTapped="OnOpenAccess">
-          <ListBox.ContextMenu>
+        <!-- Accesses grid (colunas redimensionáveis) -->
+        <DataGrid Grid.Row="2"
+                  Name="AccessList"
+                  ItemsSource="{Binding AccessesFiltered}"
+                  SelectedItem="{Binding SelectedAccess}"
+                  SelectionChanged="OnAccessSelectionChanged"
+                  DoubleTapped="OnOpenAccess"
+                  AutoGenerateColumns="False"
+                  CanUserResizeColumns="True"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True">
+          <DataGrid.ContextMenu>
             <ContextMenu>
               <MenuItem Header="Abrir" Click="OnOpenAccess"/>
               <MenuItem Header="Favoritar/Desfavoritar" Click="OnToggleFavoriteClick"/>
@@ -193,30 +186,28 @@
               <MenuItem Header="Editar" Click="OnEditAccess"/>
               <MenuItem Header="Excluir" Click="OnDeleteAccess"/>
             </ContextMenu>
-          </ListBox.ContextMenu>
+          </DataGrid.ContextMenu>
 
-          <ListBox.ItemTemplate>
-            <DataTemplate>
-              <Border Padding="8" CornerRadius="8">
-                <Grid ColumnDefinitions="46,40,90,*,200,70,140,160">
-                  <TextBlock Grid.Column="0"
-                             Text="{Binding ConnectivityBadge}"
+          <DataGrid.Columns>
+            <DataGridTemplateColumn Header="Net" Width="70" MinWidth="60">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding ConnectivityBadge}"
                              Foreground="{Binding ConnectivityBadgeColor}"
                              FontSize="16"
-                             HorizontalAlignment="Center"
-                             Opacity="0.95"/>
-                  <TextBlock Grid.Column="1" Text="{Binding IsFavorite}" HorizontalAlignment="Center" Opacity="0.95"/>
-                  <TextBlock Grid.Column="2" Text="{Binding Tipo}" Opacity="0.9"/>
-                  <TextBlock Grid.Column="3" Text="{Binding Apelido}" TextTrimming="CharacterEllipsis"/>
-                  <TextBlock Grid.Column="4" Text="{Binding Host}" TextTrimming="CharacterEllipsis" Opacity="0.9"/>
-                  <TextBlock Grid.Column="5" Text="{Binding Porta}" Opacity="0.9"/>
-                  <TextBlock Grid.Column="6" Text="{Binding Usuario}" TextTrimming="CharacterEllipsis" Opacity="0.9"/>
-                  <TextBlock Grid.Column="7" Text="{Binding Url}" TextTrimming="CharacterEllipsis" Opacity="0.9"/>
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+                             HorizontalAlignment="Center"/>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Fav" Binding="{Binding FavoriteBadge}" Width="70" MinWidth="60"/>
+            <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="110" MinWidth="90"/>
+            <DataGridTextColumn Header="Apelido" Binding="{Binding ApelidoDisplay}" Width="2*" MinWidth="160"/>
+            <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="2*" MinWidth="140"/>
+            <DataGridTextColumn Header="Porta" Binding="{Binding Porta}" Width="90" MinWidth="80"/>
+            <DataGridTextColumn Header="Usuário" Binding="{Binding Usuario}" Width="180" MinWidth="120"/>
+            <DataGridTextColumn Header="URL" Binding="{Binding Url}" Width="2*" MinWidth="200"/>
+          </DataGrid.Columns>
+        </DataGrid>
 
       </Grid>
     </Border>

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -56,6 +57,8 @@ public partial class MainWindow : Window
         // Configura handler para tecla F1 (Help)
         this.KeyDown += MainWindow_KeyDown;
         UpdateAuditIntegrityStatus();
+        UpdateAppVersionText();
+        UpdateConnectivityStatusText("Aguardando checagem");
     }
 
     private AppSettings Settings => _currentSettings;
@@ -485,8 +488,7 @@ Versão 1.8.0 - MenuProUI";
 
         var online = 0;
         var offline = 0;
-        var failedAliases = new List<string>();
-        var failedDetails = new List<string>();
+        UpdateConnectivityStatusText($"Checando cliente '{VM.SelectedClient.Nome}'...");
 
         foreach (var entry in rows)
         {
@@ -508,26 +510,13 @@ Versão 1.8.0 - MenuProUI";
             else
             {
                 offline++;
-                failedAliases.Add(string.IsNullOrWhiteSpace(entry.Apelido) ? "(sem apelido)" : entry.Apelido);
-                failedDetails.Add($"{entry.Apelido}: {detailed.ErrorDetail}");
                 entry.ConnectivityState = ConnectivityState.Offline;
                 _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
             }
         }
 
         VM.ApplyAccessesFilter();
-
-        var details = failedAliases.Count > 0
-            ? "\n\nOffline: " + string.Join(", ", failedAliases.Take(8)) + (failedAliases.Count > 8 ? "..." : "")
-            : "";
-        var diag = failedDetails.Count > 0
-            ? "\n\nDiagnóstico: " + string.Join(" | ", failedDetails.Take(5)) + (failedDetails.Count > 5 ? "..." : "")
-            : "";
-
-        await new ConfirmDialog(
-            $"Cliente: {VM.SelectedClient.Nome}\nTotal: {rows.Count}\nOnline: {online}\nOffline: {offline}{details}{diag}",
-            "Resultado da Conectividade")
-            .ShowDialog<bool>(this);
+        UpdateConnectivityStatusText($"Escopo cliente: total {rows.Count} | online {online} | offline {offline}");
         _eventLogger.Log("check_connectivity", "access", VM.SelectedClient.Nome, $"Scope=selected_client; Total={rows.Count}; Online={online}; Offline={offline}");
     }
 
@@ -546,10 +535,10 @@ Versão 1.8.0 - MenuProUI";
             _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Checking;
 
         ApplyConnectivityStatusesToCurrentAccesses();
+        UpdateConnectivityStatusText("Checando todos os clientes...");
 
         var online = 0;
         var offline = 0;
-        var failedDetails = new List<string>();
 
         var timeout = TimeSpan.FromSeconds(Settings.ConnectivityTimeoutSeconds);
         var maxConcurrency = Math.Max(1, Settings.ConnectivityMaxConcurrency);
@@ -571,7 +560,6 @@ Versão 1.8.0 - MenuProUI";
                     else
                     {
                         offline++;
-                        failedDetails.Add($"{entry.Apelido}: {detailed.ErrorDetail}");
                         _connectivityStatusByAccessId[entry.Id] = ConnectivityState.Offline;
                     }
                 }
@@ -585,14 +573,7 @@ Versão 1.8.0 - MenuProUI";
         await Task.WhenAll(tasks);
 
         ApplyConnectivityStatusesToCurrentAccesses();
-        var diag = failedDetails.Count > 0
-            ? "\nDiagnóstico: " + string.Join(" | ", failedDetails.Take(8)) + (failedDetails.Count > 8 ? "..." : "")
-            : "";
-
-        await new ConfirmDialog(
-            $"Escopo: Todos os clientes\nTotal: {allAccesses.Count}\nOnline: {online}\nOffline: {offline}{diag}",
-            "Resultado da Conectividade")
-            .ShowDialog<bool>(this);
+        UpdateConnectivityStatusText($"Escopo todos: total {allAccesses.Count} | online {online} | offline {offline}");
         _eventLogger.Log("check_connectivity", "access", "all_clients", $"Total={allAccesses.Count}; Online={online}; Offline={offline}");
     }
 
@@ -1188,5 +1169,20 @@ Versão 1.8.0 - MenuProUI";
             EventLogger.IntegrityStatus.Missing => "Auditoria: Ausente",
             _ => "Auditoria: Erro"
         };
+    }
+
+    private void UpdateAppVersionText()
+    {
+        var text = this.FindControl<TextBlock>("AppVersionText");
+        if (text is null) return;
+        var v = Assembly.GetExecutingAssembly().GetName().Version;
+        text.Text = $"Versão: {v?.Major}.{v?.Minor}.{v?.Build}";
+    }
+
+    private void UpdateConnectivityStatusText(string message)
+    {
+        var text = this.FindControl<TextBlock>("ConnectivityStatusText");
+        if (text is null) return;
+        text.Text = $"Conectividade: {message}";
     }
 }

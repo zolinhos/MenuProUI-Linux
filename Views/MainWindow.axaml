@@ -9,7 +9,7 @@
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d">
 
-  <Grid ColumnDefinitions="320,*" RowDefinitions="Auto,*" Margin="14" RowSpacing="12" ColumnSpacing="12">
+  <Grid ColumnDefinitions="320,*" RowDefinitions="Auto,*,Auto" Margin="14" RowSpacing="12" ColumnSpacing="12">
 
     <!-- Top bar with dropdown menus -->
     <Border Grid.ColumnSpan="2" CornerRadius="10" Padding="12" BorderBrush="#333" BorderThickness="1">
@@ -209,6 +209,23 @@
           </DataGrid.Columns>
         </DataGrid>
 
+      </Grid>
+    </Border>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Grid.ColumnSpan="2" CornerRadius="10" Padding="10,8" BorderBrush="#333" BorderThickness="1">
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock Name="AppVersionText"
+                   Grid.Column="0"
+                   Text="Versão: -"
+                   Opacity="0.85"
+                   VerticalAlignment="Center"/>
+        <TextBlock Name="ConnectivityStatusText"
+                   Grid.Column="1"
+                   Text="Conectividade: aguardando checagem"
+                   HorizontalAlignment="Right"
+                   Opacity="0.9"
+                   VerticalAlignment="Center"/>
       </Grid>
     </Border>
 

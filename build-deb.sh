@@ -4,7 +4,7 @@ export AVALONIA_TELEMETRY_OPTOUT=1
 
 APP_NAME="MenuProUI"
 PKG_NAME="menupro-ui"
-VERSION="1.9.4"
+VERSION="1.9.5"
 # default target (can be overridden by loop or env)
 ARCH="amd64"
 RUNTIME="linux-x64"

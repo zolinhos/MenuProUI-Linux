@@ -85,6 +85,18 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // Setas (sem modificadores): navegação confiável na lista de clientes.
+            if (!hasCtrl && !hasShift && (e.Key == Key.Up || e.Key == Key.Down))
+            {
+                var focusedControl = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+                if (focusedControl is not TextBox)
+                {
+                    e.Handled = true;
+                    MoveClientSelection(e.Key == Key.Down ? 1 : -1);
+                    return;
+                }
+            }
+
             // Ctrl+Q - Sair (Close)
             if (hasCtrl && e.Key == Key.Q)
             {
@@ -381,7 +393,7 @@ Versão 1.8.0 - MenuProUI";
     {
         VM.SetSelectedClient(VM.SelectedClient);
         // Evita mutar coleções vinculadas durante o evento de seleção do ListBox.
-        Dispatcher.UIThread.Post(ApplyConnectivityStatusesToCurrentAccesses, DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => ApplyConnectivityStatusesToCurrentAccesses(refreshClientList: false), DispatcherPriority.Background);
     }
 
     private async void OnAccessSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -624,7 +636,7 @@ Versão 1.8.0 - MenuProUI";
             .ToArray();
     }
 
-    private void ApplyConnectivityStatusesToCurrentAccesses()
+    private void ApplyConnectivityStatusesToCurrentAccesses(bool refreshClientList = true)
     {
         foreach (var entry in VM.Accesses)
         {
@@ -634,10 +646,10 @@ Versão 1.8.0 - MenuProUI";
         }
 
         VM.ApplyAccessesFilter();
-        ApplyClientConnectivityStatuses();
+        ApplyClientConnectivityStatuses(refreshClientList);
     }
 
-    private void ApplyClientConnectivityStatuses()
+    private void ApplyClientConnectivityStatuses(bool refreshClientList = true)
     {
         var repo = new CsvRepository();
         var (_, allAccesses) = repo.Load();
@@ -652,7 +664,26 @@ Versão 1.8.0 - MenuProUI";
             _connectivityStatusByClientId[client.Id] = aggregated;
         }
 
-        VM.ApplyClientFilter();
+        if (refreshClientList)
+            VM.ApplyClientFilter();
+    }
+
+    private void MoveClientSelection(int delta)
+    {
+        if (VM.ClientsFiltered.Count == 0) return;
+
+        var currentIndex = VM.SelectedClient is null
+            ? -1
+            : VM.ClientsFiltered.IndexOf(VM.SelectedClient);
+
+        var nextIndex = currentIndex + delta;
+        if (nextIndex < 0) nextIndex = 0;
+        if (nextIndex >= VM.ClientsFiltered.Count) nextIndex = VM.ClientsFiltered.Count - 1;
+
+        VM.SelectedClient = VM.ClientsFiltered[nextIndex];
+
+        var clientsList = this.FindControl<ListBox>("ClientsList");
+        clientsList?.Focus();
     }
 
     private ConnectivityState ResolveClientState(Guid clientId, Dictionary<Guid, List<AccessEntry>> accessesByClient)

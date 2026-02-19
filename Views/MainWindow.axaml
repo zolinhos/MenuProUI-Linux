@@ -17,13 +17,29 @@
         
         <!-- Menu Clientes -->
         <StackPanel Orientation="Horizontal" Spacing="5">
-          <Button Name="ClientsMenuBtn" Width="35" Height="35" Padding="0" ToolTip.Tip="Menu de Clientes">⋮</Button>
+          <Button Name="ClientsMenuBtn"
+                  Width="35"
+                  Height="35"
+                  Padding="0"
+                  FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                  FontSize="24"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  ToolTip.Tip="Menu de Clientes">&#xE716;</Button>
           <TextBlock VerticalAlignment="Center" Text="Clientes" FontWeight="Bold"/>
         </StackPanel>
 
         <!-- Menu Acessos -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
-          <Button Name="AccessesMenuBtn" Width="35" Height="35" Padding="0" ToolTip.Tip="Menu de Acessos">⋮</Button>
+          <Button Name="AccessesMenuBtn"
+                  Width="35"
+                  Height="35"
+                  Padding="0"
+                  FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                  FontSize="24"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  ToolTip.Tip="Menu de Acessos">&#xE7F4;</Button>
           <TextBlock VerticalAlignment="Center" Text="Acessos" FontWeight="Bold"/>
         </StackPanel>
 

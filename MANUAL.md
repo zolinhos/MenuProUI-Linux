@@ -129,6 +129,18 @@ Conectividade (alinhamento com versão Mac)
 - O resultado exibe diagnóstico resumido (DNS, timeout, conexão recusada, host indisponível).
 - O diálogo de acesso possui teste inline de URL.
 
+MTK / WinBox no Linux
+---------------------
+
+- O tipo `MTK` usa host+porta (padrão `8291`) e usuário.
+- A chamada do launcher tenta executáveis com nomes case-sensitive e variações comuns:
+  - `WinBox`
+  - `winbox`
+  - `WinBox4Linux`
+  - `winbox4linux`
+- Se nenhum executável for encontrado no `PATH`, o app faz fallback para `winbox://`.
+- O endpoint é montado no formato `host:porta` (ex.: `192.168.88.1:8291`), alinhado ao uso padrão do WinBox.
+
 Auditoria e integridade
 -----------------------
 

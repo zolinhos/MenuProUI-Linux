@@ -11,11 +11,12 @@ namespace MenuProUI.Services;
 /// - SSH: abre terminal com conexão SSH
 /// - RDP: abre cliente RDP no terminal (com suporte a xfreerdp/xfreerdp3)
 /// - URL: abre navegador padrão
+/// - MTK: abre WinBox (quando disponível) ou protocolo winbox://
 /// </summary>
 public static class AccessLauncher
 {
     /// <summary>
-    /// Abre um acesso baseado em seu tipo (SSH, RDP ou URL).
+    /// Abre um acesso baseado em seu tipo (SSH, RDP, URL ou MTK).
     /// Detecta automaticamente e executa a ação apropriada.
     /// </summary>
     /// <param name="e">Acesso a ser aberto</param>
@@ -32,6 +33,9 @@ public static class AccessLauncher
             case AccessType.RDP:
                 // Abre RDP em terminal (não congela a UI)
                 OpenRdpInTerminal(e);
+                break;
+            case AccessType.MTK:
+                OpenMtk(e);
                 break;
         }
     }
@@ -224,6 +228,34 @@ public static class AccessLauncher
     }
 
     /// <summary>
+    /// Abre acesso MTK/WinBox. Tenta clientes nativos e faz fallback para protocolo winbox://.
+    /// </summary>
+    private static void OpenMtk(AccessEntry e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Host)) return;
+
+        var host = e.Host.Trim();
+        var port = (e.Porta is > 0) ? e.Porta.Value : 8291;
+        var hostPort = $"{host}:{port}";
+        var user = (e.Usuario ?? "").Trim();
+
+        if (TryStartProcess("winbox", hostPort)) return;
+        if (!string.IsNullOrWhiteSpace(user) && TryStartProcess("winbox", hostPort, user)) return;
+        if (TryStartProcess("winbox4linux", hostPort)) return;
+
+        if (!string.IsNullOrWhiteSpace(user) &&
+            TryStartProcess("winbox4linux", "--host", host, "--port", port.ToString(), "--user", user))
+        {
+            return;
+        }
+
+        var url = string.IsNullOrWhiteSpace(user)
+            ? $"winbox://{host}:{port}"
+            : $"winbox://{Uri.EscapeDataString(user)}@{host}:{port}";
+        OpenUrl(url);
+    }
+
+    /// <summary>
     /// Abre um terminal com um comando a executar.
     /// Tenta vários emuladores de terminal comuns até conseguir abrir um.
     /// </summary>
@@ -249,6 +281,26 @@ public static class AccessLauncher
     {
         try
         {
+            var psi = new ProcessStartInfo
+            {
+                FileName = file,
+                UseShellExecute = false
+            };
+            foreach (var a in args) psi.ArgumentList.Add(a);
+            Process.Start(psi);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryStartProcess(string file, params string[] args)
+    {
+        try
+        {
+            if (!IsOnPath(file)) return false;
             var psi = new ProcessStartInfo
             {
                 FileName = file,

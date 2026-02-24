@@ -7,7 +7,7 @@ namespace MenuProUI.Models;
 
 /// <summary>
 /// Representa um cliente (organização, projeto ou agregador de acessos).
-/// Um cliente pode ter múltiplos acessos (SSH, RDP, URLs) associados.
+/// Um cliente pode ter múltiplos acessos (SSH, RDP, URLs e MTK) associados.
 /// </summary>
 public class Client : INotifyPropertyChanged
 {

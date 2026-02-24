@@ -12,5 +12,8 @@ public enum AccessType
     RDP,
     
     /// <summary>Acesso a URL/Website no navegador</summary>
-    URL
+    URL,
+
+    /// <summary>Acesso MikroTik via WinBox (porta padrão 8291)</summary>
+    MTK
 }

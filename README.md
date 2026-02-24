@@ -1,6 +1,6 @@
-# MenuProUI v1.9.8
+# MenuProUI v2.0.0
 
-MenuProUI é um gerenciador de acessos (SSH, RDP e URLs) organizado por clientes.
+MenuProUI é um gerenciador de acessos (SSH, RDP, URLs e MTK) organizado por clientes.
 
 ## Funcionalidades
 
@@ -8,7 +8,7 @@ MenuProUI é um gerenciador de acessos (SSH, RDP e URLs) organizado por clientes
 - 🔍 Busca em tempo real para clientes e acessos
 - ⌨️ 15 atalhos de teclado para máxima produtividade
 - 💾 Persistência de dados em CSV (fácil backup e migração)
-- 🚀 Lançamento direto de SSH, RDP e URLs
+- 🚀 Lançamento direto de SSH, RDP, URLs e MTK (WinBox)
 - 🌐 Normalização de URL com HTTPS padrão
 - 📡 Checagem manual de conectividade (cliente atual ou todos)
 - 🌐 URL com fallback de portas configuráveis (ex.: 443,80,8443,8080,9443)
@@ -93,7 +93,7 @@ Atalhos de Teclado
 | **Ctrl+Shift+E** | Editar Acesso |
 | **Ctrl+Delete** | Excluir Cliente |
 | **Ctrl+Shift+Delete** | Excluir Acesso |
-| **Enter** | Lançar Acesso (SSH/RDP/URL) |
+| **Enter** | Lançar Acesso (SSH/RDP/URL/MTK) |
 | **Ctrl+.** | Favoritar/Desfavoritar Acesso |
 | **Ctrl+Shift+B** | Exportar CSVs (snapshot em `~/.config/MenuProUI/exports`) |
 | **Ctrl+Shift+I** | Importar CSVs de `~/.config/MenuProUI/imports` |

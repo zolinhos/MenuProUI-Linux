@@ -4,7 +4,7 @@ MenuProUI - Manual do Usuário (MenuProUI-Linux)
 Visão geral
 -----------
 
-MenuProUI é um gerenciador GUI de acessos (SSH, RDP e URLs) organizado por clientes. Permite criar/editar/excluir clientes e acessos, exportar para CSV e abrir conexões usando ferramentas do sistema.
+MenuProUI é um gerenciador GUI de acessos (SSH, RDP, URLs e MTK) organizado por clientes. Permite criar/editar/excluir clientes e acessos, exportar para CSV e abrir conexões usando ferramentas do sistema.
 
 Requisitos
 ----------
@@ -83,7 +83,7 @@ Os modelos de dados estão em `Models/Client.cs` e `Models/AccessEntry.cs`.
 - `acessos.csv` (colunas correspondentes a `AccessEntry`):
   - `Id` (GUID)
   - `ClientId` (GUID vinculado a `clientes.csv`)
-  - `Tipo` (enum: `SSH`, `RDP`, `URL`)
+  - `Tipo` (enum: `SSH`, `RDP`, `URL`, `MTK`)
   - `Apelido` (string)
   - `Host` (string, opcional)
   - `Porta` (int?, opcional)
@@ -122,6 +122,7 @@ Conectividade (alinhamento com versão Mac)
 - Portas padrão usadas na validação quando ausentes:
   - SSH: `22`
   - RDP: `3389`
+  - MTK: `8291`
   - URL: `80` (http), `443` (https), `21` (ftp), fallback `443` para demais esquemas
 - Para URL, após falha na porta principal, o app tenta portas fallback configuráveis (CSV em Configurações).
 - Se disponíveis no sistema, os probes usam fallback por `nmap` e `nc`.

@@ -84,7 +84,7 @@ public partial class AccessDialog : Window
         var tipo = (AccessType)(TypeBox.SelectedItem ?? AccessType.URL);
 
         PanelUrl.IsVisible = tipo == AccessType.URL;
-        PanelSshRdp.IsVisible = tipo is AccessType.SSH or AccessType.RDP;
+        PanelSshRdp.IsVisible = tipo is AccessType.SSH or AccessType.RDP or AccessType.MTK;
         PanelRdp.IsVisible = tipo == AccessType.RDP;
 
         if (tipo == AccessType.SSH && string.IsNullOrWhiteSpace(PortBox.Text))
@@ -92,6 +92,9 @@ public partial class AccessDialog : Window
 
         if (tipo == AccessType.RDP && string.IsNullOrWhiteSpace(PortBox.Text))
             PortBox.Text = "3389";
+
+        if (tipo == AccessType.MTK && string.IsNullOrWhiteSpace(PortBox.Text))
+            PortBox.Text = "8291";
     }
 
     private void OnSave(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -134,6 +137,9 @@ public partial class AccessDialog : Window
 
             var user = (UserBox.Text ?? "").Trim();
             var portText = (PortBox.Text ?? "").Trim();
+
+            if (tipo == AccessType.MTK && string.IsNullOrWhiteSpace(user))
+                return;
 
             int? port = null;
             if (int.TryParse(portText, out var p) && p > 0 && p <= 65535) port = p;

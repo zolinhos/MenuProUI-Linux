@@ -11,7 +11,7 @@ using MenuProUI.Models;
 namespace MenuProUI.Services;
 
 /// <summary>
-/// Serviço de checagem de conectividade TCP para acessos SSH/RDP/URL.
+/// Serviço de checagem de conectividade TCP para acessos SSH/RDP/URL/MTK.
 /// </summary>
 public static class ConnectivityChecker
 {
@@ -70,7 +70,13 @@ public static class ConnectivityChecker
 
         if (entry.Tipo != AccessType.URL)
         {
-            var basePort = entry.Tipo == AccessType.SSH ? 22 : 3389;
+            var basePort = entry.Tipo switch
+            {
+                AccessType.SSH => 22,
+                AccessType.RDP => 3389,
+                AccessType.MTK => 8291,
+                _ => 443
+            };
             var port = entry.Porta is > 0 and <= 65535 ? entry.Porta.Value : basePort;
             if (hasNmap)
             {

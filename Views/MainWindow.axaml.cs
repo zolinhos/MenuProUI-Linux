@@ -305,7 +305,7 @@ FUNCIONALIDADES PRINCIPAIS:
   • Buscar: Filtra por nome ou observações em tempo real
 
 🔓 ACESSOS
-  • Novo: Cria acesso (SSH, RDP ou URL) para cliente
+  • Novo: Cria acesso (SSH, RDP, URL ou MTK) para cliente
   • Editar: Modifica configurações do acesso
   • Excluir: Remove o acesso
   • Abrir: Abre/conecta ao acesso
@@ -350,6 +350,7 @@ Busca:
   • SSH: Conexão segura para Linux/Unix (porta 22)
   • RDP: Área de trabalho remota Windows (porta 3389)
   • URL: Abrir página web no navegador padrão
+  • MTK: Acesso WinBox para MikroTik (porta 8291)
 
 💡 DICAS ÚTEIS:
   • Use Ctrl+F para encontrar rapidamente um cliente
@@ -365,6 +366,7 @@ SSH: Host, Porta (padrão 22), Usuário
 RDP: Host, Porta (padrão 3389), Usuário, Domínio
      Opções: Tela Cheia, Resolução Dinâmica, Ignorar Certificado
 URL: Link completo (https://...)
+MTK: Host, Porta (padrão 8291), Usuário
 Todos: Apelido, Observações
 
 ════════════════════════════════════════════
@@ -374,7 +376,7 @@ GitHub: https://github.com/zolinhos/MenuProUI-Linux
 Issues: https://github.com/zolinhos/MenuProUI-Linux/issues
 Discussions: https://github.com/zolinhos/MenuProUI-Linux/discussions
 
-Versão 1.8.0 - MenuProUI";
+Versão 2.0.0 - MenuProUI";
 
         var dlg = new HelpDialog(helpText);
         await dlg.ShowDialog<bool>(this);
@@ -601,6 +603,7 @@ Versão 1.8.0 - MenuProUI";
         {
             AccessType.SSH => (entry.Porta is > 0 and <= 65535) ? entry.Porta!.Value : 22,
             AccessType.RDP => (entry.Porta is > 0 and <= 65535) ? entry.Porta!.Value : 3389,
+            AccessType.MTK => (entry.Porta is > 0 and <= 65535) ? entry.Porta!.Value : 8291,
             _ => 443
         };
 
@@ -966,7 +969,7 @@ Versão 1.8.0 - MenuProUI";
 
     /// <summary>
     /// Handler para abrir/conectar ao acesso selecionado.
-    /// Detecta tipo (SSH, RDP, URL) e executa aktion apropriada.
+    /// Detecta tipo (SSH, RDP, URL, MTK) e executa ação apropriada.
     /// Fecha menus depois de executar.
     /// </summary>
     private void OnOpenAccess(object? sender, RoutedEventArgs e)

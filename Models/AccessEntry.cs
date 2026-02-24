@@ -6,7 +6,7 @@ using CsvHelper.Configuration.Attributes;
 namespace MenuProUI.Models;
 
 /// <summary>
-/// Representa um acesso individual (SSH, RDP ou URL) associado a um cliente.
+/// Representa um acesso individual (SSH, RDP, URL ou MTK) associado a um cliente.
 /// Contém todas as configurações necessárias para conectar ou abrir um recurso.
 /// </summary>
 public class AccessEntry : INotifyPropertyChanged
@@ -18,7 +18,7 @@ public class AccessEntry : INotifyPropertyChanged
     /// <summary>ID do cliente ao qual este acesso está associado</summary>
     public Guid ClientId { get; set; }
 
-    /// <summary>Tipo de acesso: SSH, RDP ou URL</summary>
+    /// <summary>Tipo de acesso: SSH, RDP, URL ou MTK</summary>
     public AccessType Tipo { get; set; } = AccessType.URL;
     
     /// <summary>Nome/apelido do acesso para identificação rápida (ex: "Servidor Web Prod")</summary>
@@ -41,7 +41,7 @@ public class AccessEntry : INotifyPropertyChanged
     /// <summary>Nome do host ou IP do servidor (ex: "192.168.1.100" ou "server.example.com")</summary>
     public string? Host { get; set; }
     
-    /// <summary>Porta de conexão (padrão: 22 para SSH, 3389 para RDP)</summary>
+    /// <summary>Porta de conexão (padrão: 22 SSH, 3389 RDP, 8291 MTK)</summary>
     public int? Porta { get; set; }
     
     /// <summary>Nome de usuário para autenticação</summary>

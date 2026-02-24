@@ -239,11 +239,13 @@ public static class AccessLauncher
         var hostPort = $"{host}:{port}";
         var user = (e.Usuario ?? "").Trim();
 
-        if (TryStartProcess("WinBox", hostPort)) return;
         if (!string.IsNullOrWhiteSpace(user) && TryStartProcess("WinBox", hostPort, user)) return;
-        if (TryStartProcess("winbox", hostPort)) return;
+        if (TryStartProcess("WinBox", hostPort)) return;
         if (!string.IsNullOrWhiteSpace(user) && TryStartProcess("winbox", hostPort, user)) return;
+        if (TryStartProcess("winbox", hostPort)) return;
+        if (!string.IsNullOrWhiteSpace(user) && TryStartProcess("WinBox4Linux", hostPort, user)) return;
         if (TryStartProcess("WinBox4Linux", hostPort)) return;
+        if (!string.IsNullOrWhiteSpace(user) && TryStartProcess("winbox4linux", hostPort, user)) return;
         if (TryStartProcess("winbox4linux", hostPort)) return;
 
         if (!string.IsNullOrWhiteSpace(user) &&

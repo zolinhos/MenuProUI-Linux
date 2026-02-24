@@ -192,11 +192,22 @@ public partial class AccessDialog : Window
         var builder = new UriBuilder(uri)
         {
             Scheme = string.IsNullOrWhiteSpace(uri.Scheme) ? "https" : uri.Scheme,
-            Port = uri.IsDefaultPort ? 443 : uri.Port,
+            Port = uri.IsDefaultPort ? DefaultPortForScheme(uri.Scheme) : uri.Port,
             Path = string.IsNullOrWhiteSpace(uri.AbsolutePath) ? "/" : uri.AbsolutePath
         };
 
         return builder.Uri.ToString();
+    }
+
+    private static int DefaultPortForScheme(string? scheme)
+    {
+        return (scheme ?? "").ToLowerInvariant() switch
+        {
+            "http" => 80,
+            "https" => 443,
+            "ftp" => 21,
+            _ => 443
+        };
     }
 
     private void OnCancel(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close(false);

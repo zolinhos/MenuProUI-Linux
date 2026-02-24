@@ -4,7 +4,13 @@ export AVALONIA_TELEMETRY_OPTOUT=1
 
 APP_NAME="MenuProUI"
 PKG_NAME="menupro-ui"
-VERSION="${VERSION:-${RELEASE_VERSION:-$(grep -oPm1 '(?<=<Version>)[^<]+' MenuProUI.csproj || echo "1.9.8")}}"
+VERSION="${VERSION:-${RELEASE_VERSION:-}}"
+if [[ -z "${VERSION}" ]]; then
+  VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' MenuProUI.csproj | head -n 1)"
+fi
+if [[ -z "${VERSION}" ]]; then
+  VERSION="1.9.8"
+fi
 # default target (can be overridden by loop or env)
 ARCH="amd64"
 RUNTIME="linux-x64"
